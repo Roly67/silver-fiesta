@@ -1,0 +1,34 @@
+# CODEOWNERS - Define code ownership for automatic PR review requests
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @Roly67
+
+# Domain layer - core business logic
+/src/FileConversionApi.Domain/ @Roly67
+
+# Application layer - use cases and business rules
+/src/FileConversionApi.Application/ @Roly67
+
+# Infrastructure layer - external concerns
+/src/FileConversionApi.Infrastructure/ @Roly67
+
+# API layer - controllers and middleware
+/src/FileConversionApi.Api/ @Roly67
+
+# Tests
+/tests/ @Roly67
+
+# CI/CD and DevOps
+/.github/ @Roly67
+/Dockerfile @Roly67
+/docker-compose*.yml @Roly67
+
+# Documentation
+/*.md @Roly67
+/docs/ @Roly67
+
+# Configuration
+*.json @Roly67
+*.yml @Roly67
+*.yaml @Roly67
