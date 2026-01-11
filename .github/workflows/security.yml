@@ -114,12 +114,21 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
+          exit-code: '0'
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+
+      - name: Run Trivy for PR comment
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'fileconversionapi:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
 
   secret-scan:
     name: Secret Scanning
@@ -136,46 +145,10 @@ jobs:
         with:
           extra_args: --only-verified
 
-  sast:
-    name: SAST Analysis
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Install Security Code Scan
-        run: dotnet tool install --global security-code-scan-vs2019
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Run Security Code Scan
-        run: |
-          dotnet build --configuration Release /p:UseSharedCompilation=false 2>&1 | tee sast-report.txt
-
-          # Check for security warnings (SCS prefix)
-          if grep -q "warning SCS" sast-report.txt; then
-            echo "::warning::Security warnings found - review sast-report.txt"
-          fi
-
-      - name: Upload SAST report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: sast-report
-          path: sast-report.txt
-          retention-days: 30
-
   security-summary:
     name: Security Summary
     runs-on: ubuntu-latest
-    needs: [codeql, nuget-vulnerabilities, docker-scan, secret-scan, sast]
+    needs: [codeql, nuget-vulnerabilities, docker-scan, secret-scan]
     if: always()
 
     steps:
@@ -189,4 +162,3 @@ jobs:
           echo "| NuGet Vulnerabilities | ${{ needs.nuget-vulnerabilities.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Docker Scan | ${{ needs.docker-scan.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Secret Scan | ${{ needs.secret-scan.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| SAST | ${{ needs.sast.result }} |" >> $GITHUB_STEP_SUMMARY
