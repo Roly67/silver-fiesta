@@ -1,95 +1,171 @@
-# File Conversion API
+<div align="center">
 
-A .NET 10 Web API for converting files between different formats, built with Clean Architecture principles.
+# 📄 File Conversion API
 
-## Features
+**Transform documents at scale with a modern, secure REST API**
 
-- **HTML to PDF Conversion**: Convert HTML content or URLs to PDF using PuppeteerSharp
-- **JWT Authentication**: Secure API endpoints with JWT Bearer tokens
-- **API Key Authentication**: Alternative authentication method using X-API-Key header
-- **PostgreSQL Storage**: Store user data and conversion job history
-- **Clean Architecture**: Domain, Application, Infrastructure, and API layers
-- **CQRS Pattern**: Command Query Responsibility Segregation with MediatR
-- **Structured Logging**: Serilog with console and file sinks
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-## Getting Started
+<br />
+
+[Getting Started](#-getting-started) · [API Reference](#-api-reference) · [Architecture](#-architecture) · [Configuration](#-configuration)
+
+<br />
+
+---
+
+</div>
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🔄 Document Conversion
+Convert HTML content or URLs to pixel-perfect PDFs using PuppeteerSharp with full control over page size, margins, and rendering options.
+
+</td>
+<td width="50%">
+
+### 🔐 Dual Authentication
+Secure your endpoints with JWT Bearer tokens for user sessions or API keys for service-to-service communication.
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🏗️ Clean Architecture
+Four-layer architecture (Domain, Application, Infrastructure, API) with CQRS pattern powered by MediatR.
+
+</td>
+<td width="50%">
+
+### 📊 Job Tracking
+Monitor conversion progress, access history, and download results with comprehensive job management.
+
+</td>
+</tr>
+</table>
+
+<br />
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- .NET 10 SDK
-- PostgreSQL 16+
-- Docker (optional)
+| Requirement | Version |
+|------------|---------|
+| .NET SDK | 10.0+ |
+| PostgreSQL | 16+ |
+| Docker | Optional |
 
-### Running with Docker
+### Quick Start with Docker
 
 ```bash
 docker-compose up -d
 ```
 
-The API will be available at:
-- HTTP: http://localhost:5000
-- HTTPS: https://localhost:5001
+> **API Endpoints**
+> HTTP: `http://localhost:5000`
+> HTTPS: `https://localhost:5001`
 
-### Running Locally
+<details>
+<summary><strong>📋 Manual Setup</strong></summary>
 
-1. Start PostgreSQL:
-   ```bash
-   docker run -d --name postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=fileconversion -p 5432:5432 postgres:16-alpine
-   ```
+<br />
 
-2. Update connection string in `appsettings.Development.json`:
-   ```json
-   {
-     "ConnectionStrings": {
-       "Default": "Host=localhost;Database=fileconversion;Username=postgres;Password=postgres"
-     }
-   }
-   ```
-
-3. Run the API:
-   ```bash
-   cd src/FileConversionApi.Api
-   dotnet run
-   ```
-
-### Running Tests
-
+**1. Start PostgreSQL**
 ```bash
-dotnet test --collect:"XPlat Code Coverage"
+docker run -d \
+  --name postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=fileconversion \
+  -p 5432:5432 \
+  postgres:16-alpine
 ```
 
-Generate coverage report:
+**2. Configure Connection String**
+
+Update `appsettings.Development.json`:
+```json
+{
+  "ConnectionStrings": {
+    "Default": "Host=localhost;Database=fileconversion;Username=postgres;Password=postgres"
+  }
+}
+```
+
+**3. Run the API**
 ```bash
+cd src/FileConversionApi.Api
+dotnet run
+```
+
+</details>
+
+<details>
+<summary><strong>🧪 Running Tests</strong></summary>
+
+<br />
+
+```bash
+# Run tests with coverage
+dotnet test --collect:"XPlat Code Coverage"
+
+# Generate coverage report
 dotnet test --collect:"XPlat Code Coverage" --results-directory ./coverage
 ```
 
-## API Endpoints
+</details>
+
+<br />
+
+---
+
+<br />
+
+## 📡 API Reference
 
 ### Authentication
 
-#### Register
-```http
-POST /api/v1/auth/register
-Content-Type: application/json
+<table>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/auth/register</code></td>
+<td>Create a new account</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/auth/login</code></td>
+<td>Authenticate and receive tokens</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/auth/refresh</code></td>
+<td>Refresh an expired access token</td>
+</tr>
+</table>
 
+<details>
+<summary><strong>Register / Login Request</strong></summary>
+
+```json
 {
   "email": "user@example.com",
   "password": "SecurePassword123!"
 }
 ```
 
-#### Login
-```http
-POST /api/v1/auth/login
-Content-Type: application/json
+</details>
 
-{
-  "email": "user@example.com",
-  "password": "SecurePassword123!"
-}
-```
+<details>
+<summary><strong>Token Response</strong></summary>
 
-Response:
 ```json
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -99,56 +175,81 @@ Response:
 }
 ```
 
-#### Refresh Token
-```http
-POST /api/v1/auth/refresh
-Content-Type: application/json
+</details>
 
-{
-  "refreshToken": "base64-encoded-refresh-token"
-}
-```
+<br />
 
-### Using JWT Bearer Tokens
+### 🔑 Using JWT Bearer Tokens
 
-After registering or logging in, you receive an `accessToken` that must be included in the `Authorization` header for all protected endpoints:
+Include the access token in the `Authorization` header for protected endpoints:
 
 ```
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-**Token Lifecycle:**
-- Access tokens expire after 60 minutes (configurable)
-- When expired, use the refresh token to obtain a new access token
-- Refresh tokens expire after 7 days (configurable)
+| Token Type | Lifetime | Refresh Strategy |
+|-----------|----------|------------------|
+| Access Token | 60 min | Use refresh token endpoint |
+| Refresh Token | 7 days | Re-authenticate |
 
-**JWT Claims:**
-- `sub`: User ID (GUID)
-- `email`: User email address
-- `jti`: Unique token identifier
-- `exp`: Expiration timestamp
+<details>
+<summary><strong>JWT Claims Reference</strong></summary>
 
-**Decoding Tokens:**
-Use [jwt.io](https://jwt.io) or decode locally:
+| Claim | Description |
+|-------|-------------|
+| `sub` | User ID (GUID) |
+| `email` | User email address |
+| `jti` | Unique token identifier |
+| `exp` | Expiration timestamp |
+
+**Decode tokens locally:**
 ```bash
 echo "<token>" | cut -d'.' -f2 | base64 -d 2>/dev/null | jq
 ```
 
-### API Key Authentication
+</details>
 
-As an alternative to JWT, you can authenticate using an API key in the `X-API-Key` header:
+<br />
 
-```http
-GET /api/v1/convert/history
+### 🔐 API Key Authentication
+
+Alternative to JWT for service-to-service communication:
+
+```
 X-API-Key: your-api-key-here
 ```
 
-API keys are generated when a user registers and can be found in the user's profile.
+<br />
 
 ### File Conversion
 
-#### Convert HTML to PDF
-```http
+<table>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/convert/html-to-pdf</code></td>
+<td>Convert HTML/URL to PDF</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/convert/{id}</code></td>
+<td>Get job status</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/convert/{id}/download</code></td>
+<td>Download result</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/convert/history</code></td>
+<td>List conversion history</td>
+</tr>
+</table>
+
+<details>
+<summary><strong>Convert HTML to PDF</strong></summary>
+
+```json
 POST /api/v1/convert/html-to-pdf
 Authorization: Bearer <token>
 Content-Type: application/json
@@ -169,7 +270,7 @@ Content-Type: application/json
 }
 ```
 
-Or convert from URL:
+**Convert from URL:**
 ```json
 {
   "url": "https://example.com",
@@ -177,35 +278,79 @@ Or convert from URL:
 }
 ```
 
-### Jobs
+</details>
 
-#### Get Job by ID
-```http
-GET /api/v1/convert/{id}
-Authorization: Bearer <token>
-```
-
-#### Get Conversion History
-```http
-GET /api/v1/convert/history?pageNumber=1&pageSize=10
-Authorization: Bearer <token>
-```
-
-#### Download Job Result
-```http
-GET /api/v1/convert/{id}/download
-Authorization: Bearer <token>
-```
+<br />
 
 ### Health Check
 
-```http
+```
 GET /health
 ```
 
-## Configuration
+<br />
 
-### JWT Settings
+---
+
+<br />
+
+## 🏛️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          API Layer                              │
+│              Controllers · Middleware · Configuration           │
+├─────────────────────────────────────────────────────────────────┤
+│                      Application Layer                          │
+│            Commands · Queries · DTOs · Interfaces               │
+├─────────────────────────────────────────────────────────────────┤
+│                     Infrastructure Layer                        │
+│          EF Core · Repositories · External Services             │
+├─────────────────────────────────────────────────────────────────┤
+│                        Domain Layer                             │
+│            Entities · Value Objects · Domain Errors             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+<details>
+<summary><strong>Project Structure</strong></summary>
+
+```
+src/
+├── FileConversionApi.Domain/          # Entities, value objects, errors
+├── FileConversionApi.Application/     # Commands, queries, interfaces, DTOs
+├── FileConversionApi.Infrastructure/  # EF Core, repositories, services
+└── FileConversionApi.Api/             # Controllers, middleware, config
+
+tests/
+├── FileConversionApi.UnitTests/       # Unit tests
+└── FileConversionApi.IntegrationTests/# Integration tests
+```
+
+</details>
+
+<details>
+<summary><strong>Layer Responsibilities</strong></summary>
+
+| Layer | Responsibility | Dependencies |
+|-------|---------------|--------------|
+| **Domain** | Business entities, value objects, domain errors | None |
+| **Application** | Use cases (CQRS), DTOs, interface definitions | Domain |
+| **Infrastructure** | Repositories, external services, data access | Application, Domain |
+| **API** | Controllers, middleware, configuration | All layers |
+
+</details>
+
+<br />
+
+---
+
+<br />
+
+## ⚙️ Configuration
+
+<details>
+<summary><strong>JWT Settings</strong></summary>
 
 ```json
 {
@@ -219,7 +364,10 @@ GET /health
 }
 ```
 
-### Puppeteer Settings
+</details>
+
+<details>
+<summary><strong>Puppeteer Settings</strong></summary>
 
 ```json
 {
@@ -229,31 +377,17 @@ GET /health
 }
 ```
 
-## Project Structure
+</details>
 
-```
-src/
-  FileConversionApi.Domain/        # Domain entities, value objects, errors
-  FileConversionApi.Application/   # Commands, queries, interfaces, DTOs
-  FileConversionApi.Infrastructure/ # EF Core, repositories, services
-  FileConversionApi.Api/           # Controllers, middleware, configuration
-tests/
-  FileConversionApi.UnitTests/     # Unit tests
-  FileConversionApi.IntegrationTests/ # Integration tests
-```
+<br />
 
-## Architecture
+---
 
-This project follows Clean Architecture principles:
+<br />
 
-- **Domain Layer**: Contains business entities, value objects, and domain errors. No external dependencies.
-- **Application Layer**: Contains use cases (commands/queries), DTOs, and interface definitions. Depends only on Domain.
-- **Infrastructure Layer**: Contains implementations for repositories, external services, and data access. Depends on Application and Domain.
-- **API Layer**: Contains controllers, middleware, and API configuration. Depends on all other layers.
+## 🚨 Error Handling
 
-## Error Handling
-
-The API uses RFC 7807 Problem Details for error responses:
+The API uses [RFC 7807](https://tools.ietf.org/html/rfc7807) Problem Details for standardized error responses:
 
 ```json
 {
@@ -267,6 +401,20 @@ The API uses RFC 7807 Problem Details for error responses:
 }
 ```
 
-## License
+<br />
 
-MIT
+---
+
+<br />
+
+<div align="center">
+
+## 📄 License
+
+MIT © 2026
+
+<br />
+
+**Built with ❤️ using .NET 10 and Clean Architecture**
+
+</div>
