@@ -37,6 +37,7 @@ FileConversionApi/
 - ASP.NET Core Web API
 - Entity Framework Core with PostgreSQL (Npgsql)
 - PuppeteerSharp for HTML to PDF conversion
+- Markdig for Markdown parsing
 - MediatR for CQRS pattern
 - FluentValidation for request validation
 - JWT Bearer Authentication
@@ -198,6 +199,7 @@ Contains:
 
 ### Conversions
 - `POST /api/v1/convert/html-to-pdf` - Convert HTML to PDF (202 Accepted)
+- `POST /api/v1/convert/markdown-to-pdf` - Convert Markdown to PDF (202 Accepted)
 - `GET /api/v1/convert/{jobId}` - Get conversion job status (200 OK / 404 Not Found)
 - `GET /api/v1/convert/{jobId}/download` - Download converted file (200 OK / 404 Not Found)
 - `GET /api/v1/convert/history` - Get user's conversion history (200 OK, paginated)
@@ -242,6 +244,25 @@ public interface IFileConverter
         CancellationToken cancellationToken);
 }
 ```
+
+### Markdown to PDF Converter
+
+The Markdown to PDF converter reuses the existing HTML to PDF infrastructure:
+
+1. **Parse Markdown** - Use Markdig library to convert Markdown to HTML
+2. **Apply Styling** - Wrap HTML in a styled template with professional CSS
+3. **Generate PDF** - Delegate to HtmlToPdfConverter for final PDF generation
+
+**Markdig Pipeline Configuration:**
+- Advanced extensions (tables, task lists, autolinks, footnotes)
+- Syntax highlighting for code blocks
+- Custom container support
+
+**Default CSS Styling:**
+- Professional typography (headings, paragraphs, lists)
+- Code blocks with monospace font and background
+- Tables with borders and alternating row colors
+- Blockquotes with left border styling
 
 ---
 
@@ -404,10 +425,11 @@ The task is COMPLETE when ALL of the following are true:
 8. ✅ EF Core migrations created for PostgreSQL
 9. ✅ All API endpoints implemented with Swagger docs
 10. ✅ HTML to PDF conversion works with PuppeteerSharp
-11. ✅ JWT + API Key authentication functional
-12. ✅ Unit tests exist with 80%+ coverage
-13. ✅ docker-compose.yml exists and works
-14. ✅ README.md documents how to run the project
+11. ✅ Markdown to PDF conversion works with Markdig + PuppeteerSharp
+12. ✅ JWT + API Key authentication functional
+13. ✅ Unit tests exist with 80%+ coverage
+14. ✅ docker-compose.yml exists and works
+15. ✅ README.md documents how to run the project
 
 ---
 
@@ -427,4 +449,4 @@ When ALL completion criteria are met, output:
 
 ---
 
-**Current Status:** Starting fresh - no files exist yet.
+**Current Status:** Adding Markdown to PDF converter feature.
