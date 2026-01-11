@@ -4,6 +4,7 @@
 
 **Transform documents at scale with a modern, secure REST API**
 
+[![CI](https://github.com/Roly67/silver-fiesta/actions/workflows/ci.yml/badge.svg)](https://github.com/Roly67/silver-fiesta/actions/workflows/ci.yml)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
