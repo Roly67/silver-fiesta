@@ -69,7 +69,7 @@ dotnet test --collect:"XPlat Code Coverage" --results-directory ./coverage
 
 #### Register
 ```http
-POST /api/auth/register
+POST /api/v1/auth/register
 Content-Type: application/json
 
 {
@@ -80,7 +80,7 @@ Content-Type: application/json
 
 #### Login
 ```http
-POST /api/auth/login
+POST /api/v1/auth/login
 Content-Type: application/json
 
 {
@@ -94,21 +94,68 @@ Response:
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "refreshToken": "base64-encoded-refresh-token",
+  "tokenType": "Bearer",
   "expiresIn": 3600
 }
 ```
+
+#### Refresh Token
+```http
+POST /api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "base64-encoded-refresh-token"
+}
+```
+
+### Using JWT Bearer Tokens
+
+After registering or logging in, you receive an `accessToken` that must be included in the `Authorization` header for all protected endpoints:
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Token Lifecycle:**
+- Access tokens expire after 60 minutes (configurable)
+- When expired, use the refresh token to obtain a new access token
+- Refresh tokens expire after 7 days (configurable)
+
+**JWT Claims:**
+- `sub`: User ID (GUID)
+- `email`: User email address
+- `jti`: Unique token identifier
+- `exp`: Expiration timestamp
+
+**Decoding Tokens:**
+Use [jwt.io](https://jwt.io) or decode locally:
+```bash
+echo "<token>" | cut -d'.' -f2 | base64 -d 2>/dev/null | jq
+```
+
+### API Key Authentication
+
+As an alternative to JWT, you can authenticate using an API key in the `X-API-Key` header:
+
+```http
+GET /api/v1/convert/history
+X-API-Key: your-api-key-here
+```
+
+API keys are generated when a user registers and can be found in the user's profile.
 
 ### File Conversion
 
 #### Convert HTML to PDF
 ```http
-POST /api/convert/html-to-pdf
+POST /api/v1/convert/html-to-pdf
 Authorization: Bearer <token>
 Content-Type: application/json
 
 {
   "htmlContent": "<html><body><h1>Hello World</h1></body></html>",
-  "fileName": "document.html",
+  "fileName": "document.pdf",
   "options": {
     "pageSize": "A4",
     "landscape": false,
@@ -126,7 +173,7 @@ Or convert from URL:
 ```json
 {
   "url": "https://example.com",
-  "fileName": "example.html"
+  "fileName": "example.pdf"
 }
 ```
 
@@ -134,26 +181,26 @@ Or convert from URL:
 
 #### Get Job by ID
 ```http
-GET /api/jobs/{id}
+GET /api/v1/convert/{id}
 Authorization: Bearer <token>
 ```
 
-#### Get User's Jobs
+#### Get Conversion History
 ```http
-GET /api/jobs?pageNumber=1&pageSize=10
+GET /api/v1/convert/history?pageNumber=1&pageSize=10
 Authorization: Bearer <token>
 ```
 
 #### Download Job Result
 ```http
-GET /api/jobs/{id}/download
+GET /api/v1/convert/{id}/download
 Authorization: Bearer <token>
 ```
 
 ### Health Check
 
 ```http
-GET /api/health
+GET /health
 ```
 
 ## Configuration

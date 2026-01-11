@@ -1,6 +1,124 @@
-@FileConversionApi.Api_HostAddress = http://localhost:5218
+### File Conversion API - HTTP Examples
+### Use with VS Code REST Client or JetBrains HTTP Client
 
-GET {{FileConversionApi.Api_HostAddress}}/weatherforecast/
+@baseUrl = http://localhost:5000
+
+# After login/register, paste your access token here:
+@accessToken = YOUR_ACCESS_TOKEN_HERE
+
+# After login/register, paste your refresh token here:
+@refreshToken = YOUR_REFRESH_TOKEN_HERE
+
+# ============================================================
+# Health Check
+# ============================================================
+
+### Health Check (no auth required)
+GET {{baseUrl}}/health
 Accept: application/json
 
-###
+# ============================================================
+# Authentication
+# ============================================================
+
+### Register a new user
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "developer@example.com",
+  "password": "SecurePassword123!"
+}
+
+### Login with existing user
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "developer@example.com",
+  "password": "SecurePassword123!"
+}
+
+### Refresh access token
+POST {{baseUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+# ============================================================
+# File Conversion (requires authentication)
+# ============================================================
+
+### Convert HTML content to PDF
+POST {{baseUrl}}/api/v1/convert/html-to-pdf
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "htmlContent": "<html><head><style>body { font-family: Arial, sans-serif; padding: 40px; } h1 { color: #333; }</style></head><body><h1>Hello World</h1><p>This PDF was generated from HTML content.</p></body></html>",
+  "fileName": "hello-world.pdf",
+  "options": {
+    "pageSize": "A4",
+    "landscape": false,
+    "marginTop": 20,
+    "marginBottom": 20,
+    "marginLeft": 20,
+    "marginRight": 20
+  }
+}
+
+### Convert HTML content to PDF (minimal options)
+POST {{baseUrl}}/api/v1/convert/html-to-pdf
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "htmlContent": "<h1>Simple PDF</h1><p>Just the basics.</p>",
+  "fileName": "simple.pdf"
+}
+
+### Convert URL to PDF
+POST {{baseUrl}}/api/v1/convert/html-to-pdf
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "url": "https://example.com",
+  "fileName": "example-website.pdf",
+  "options": {
+    "pageSize": "A4",
+    "waitForJavaScript": true,
+    "javaScriptTimeout": 30000
+  }
+}
+
+# ============================================================
+# Conversion Jobs
+# ============================================================
+
+### Get conversion history (paginated)
+GET {{baseUrl}}/api/v1/convert/history?pageNumber=1&pageSize=10
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Get specific job by ID (replace {jobId} with actual GUID)
+@jobId = 00000000-0000-0000-0000-000000000000
+GET {{baseUrl}}/api/v1/convert/{{jobId}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Download conversion result (replace {jobId} with actual GUID)
+GET {{baseUrl}}/api/v1/convert/{{jobId}}/download
+Authorization: Bearer {{accessToken}}
+
+# ============================================================
+# API Key Authentication (alternative to Bearer token)
+# ============================================================
+
+### Get conversion history using API Key
+@apiKey = YOUR_API_KEY_HERE
+GET {{baseUrl}}/api/v1/convert/history?pageNumber=1&pageSize=10
+X-API-Key: {{apiKey}}
+Accept: application/json
