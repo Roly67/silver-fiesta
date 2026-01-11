@@ -151,6 +151,8 @@ jobs:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
     needs: [build, changelog]
+    outputs:
+      image_name: ${{ steps.image.outputs.lowercase }}
     permissions:
       contents: read
       packages: write
@@ -158,6 +160,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Get lowercase image name
+        id: image
+        run: echo "lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to Container Registry
         uses: docker/login-action@v3
@@ -181,6 +193,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -207,7 +220,7 @@ jobs:
             ## 🐳 Docker Image
 
             ```bash
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.version }}
+            docker pull ${{ env.REGISTRY }}/${{ needs.docker.outputs.image_name }}:${{ needs.build.outputs.version }}
             ```
 
             ## 📦 Installation
