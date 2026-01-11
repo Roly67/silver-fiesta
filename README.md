@@ -6,6 +6,7 @@
 
 [![CI](https://github.com/Roly67/silver-fiesta/actions/workflows/ci.yml/badge.svg)](https://github.com/Roly67/silver-fiesta/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Roly67/silver-fiesta/graph/badge.svg)](https://codecov.io/gh/Roly67/silver-fiesta)
+[![Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-blue?style=flat&logo=github)](https://roly67.github.io/silver-fiesta/)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
