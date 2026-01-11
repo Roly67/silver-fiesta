@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Domain layer has NO external dependencies -->
+</Project>
