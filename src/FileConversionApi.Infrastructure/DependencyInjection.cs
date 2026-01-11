@@ -47,7 +47,9 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 
         // Converters
-        services.AddSingleton<IFileConverter, HtmlToPdfConverter>();
+        services.AddSingleton<HtmlToPdfConverter>();
+        services.AddSingleton<IFileConverter>(sp => sp.GetRequiredService<HtmlToPdfConverter>());
+        services.AddSingleton<IFileConverter, MarkdownToPdfConverter>();
         services.AddSingleton<IConverterFactory, ConverterFactory>();
 
         return services;

@@ -1,0 +1,30 @@
+// <copyright file="ConvertMarkdownToPdfCommand.cs" company="FileConversionApi">
+// FileConversionApi
+// </copyright>
+
+using FileConversionApi.Application.DTOs;
+using FileConversionApi.Domain.Primitives;
+using MediatR;
+
+namespace FileConversionApi.Application.Commands.Conversion;
+
+/// <summary>
+/// Command to convert Markdown to PDF.
+/// </summary>
+public record ConvertMarkdownToPdfCommand : IRequest<Result<ConversionJobDto>>
+{
+    /// <summary>
+    /// Gets the Markdown content to convert.
+    /// </summary>
+    public string? Markdown { get; init; }
+
+    /// <summary>
+    /// Gets the file name for the output.
+    /// </summary>
+    public string? FileName { get; init; }
+
+    /// <summary>
+    /// Gets the conversion options.
+    /// </summary>
+    public ConversionOptions? Options { get; init; }
+}

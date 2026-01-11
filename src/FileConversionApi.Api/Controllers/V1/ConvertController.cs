@@ -79,6 +79,50 @@ public class ConvertController : ControllerBase
     }
 
     /// <summary>
+    /// Converts Markdown to PDF.
+    /// </summary>
+    /// <param name="request">The conversion request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The conversion job details.</returns>
+    /// <response code="202">Conversion job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("markdown-to-pdf")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ConvertMarkdownToPdf(
+        [FromBody] MarkdownToPdfRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ConvertMarkdownToPdfCommand
+        {
+            Markdown = request.Markdown,
+            FileName = request.FileName,
+            Options = request.Options,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Conversion Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
     /// Gets a conversion job by ID.
     /// </summary>
     /// <param name="jobId">The job identifier.</param>
