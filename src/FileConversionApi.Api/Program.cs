@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 
+using FileConversionApi.Api.HealthChecks;
 using FileConversionApi.Api.Middleware;
 using FileConversionApi.Api.Services;
 using FileConversionApi.Application;
@@ -16,6 +17,7 @@ using FileConversionApi.Infrastructure.Persistence;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
@@ -225,6 +227,23 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
+
+    // Health check endpoints
+    app.MapHealthChecks("/health", new HealthCheckOptions
+    {
+        ResponseWriter = HealthCheckResponseWriter.WriteAsync,
+    });
+
+    app.MapHealthChecks("/health/live", new HealthCheckOptions
+    {
+        Predicate = _ => false, // Liveness: just check if app is running
+    });
+
+    app.MapHealthChecks("/health/ready", new HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("ready"),
+        ResponseWriter = HealthCheckResponseWriter.WriteAsync,
+    });
 
     await app.RunAsync();
 
