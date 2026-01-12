@@ -186,6 +186,7 @@ Contains:
 - ErrorMessage (string, nullable)
 - CreatedAt (DateTimeOffset, not null)
 - CompletedAt (DateTimeOffset, nullable)
+- WebhookUrl (string, nullable) - URL to notify when job completes
 
 ---
 
@@ -263,6 +264,92 @@ The Markdown to PDF converter reuses the existing HTML to PDF infrastructure:
 - Code blocks with monospace font and background
 - Tables with borders and alternating row colors
 - Blockquotes with left border styling
+
+---
+
+## Webhook Notifications
+
+Notify external systems when conversion jobs complete or fail.
+
+### How It Works
+
+1. User provides optional `webhookUrl` in conversion request
+2. URL is stored in `ConversionJob.WebhookUrl`
+3. After job completes (success or failure), POST to webhook URL
+4. Webhook failures are logged but don't fail the conversion
+
+### Interface
+
+```csharp
+// Application/Interfaces/IWebhookService.cs
+public interface IWebhookService
+{
+    Task SendJobCompletedAsync(ConversionJob job, CancellationToken cancellationToken);
+}
+```
+
+### Implementation
+
+Create `WebhookService` in Infrastructure layer:
+- Use `IHttpClientFactory` for HTTP calls
+- Inject `IOptions<WebhookSettings>` for configuration
+- Implement retry logic with configurable delays
+- Log all webhook attempts (success and failure)
+- Fire-and-forget pattern (don't block conversion response)
+
+### Webhook Payload
+
+POST to the webhook URL with JSON body:
+
+```json
+{
+  "jobId": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "Completed",
+  "sourceFormat": "markdown",
+  "targetFormat": "pdf",
+  "inputFileName": "document.md",
+  "outputFileName": "document.pdf",
+  "errorMessage": null,
+  "createdAt": "2026-01-12T06:00:00Z",
+  "completedAt": "2026-01-12T06:00:05Z",
+  "downloadUrl": "/api/v1/convert/550e8400-e29b-41d4-a716-446655440000/download"
+}
+```
+
+### API Request with Webhook
+
+```json
+POST /api/v1/convert/markdown-to-pdf
+{
+  "markdown": "# Hello World",
+  "fileName": "document.pdf",
+  "webhookUrl": "https://example.com/webhooks/conversion",
+  "options": { "pageSize": "A4" }
+}
+```
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `Domain/Entities/ConversionJob.cs` | Add `WebhookUrl` property and update `Create()` method |
+| `Infrastructure/Options/WebhookSettings.cs` | Create settings class |
+| `Application/Interfaces/IWebhookService.cs` | Create interface |
+| `Infrastructure/Services/WebhookService.cs` | Create implementation |
+| `Infrastructure/Persistence/Configurations/ConversionJobConfiguration.cs` | Configure WebhookUrl column |
+| `Application/Commands/Conversion/*Command.cs` | Add WebhookUrl property to commands |
+| `Application/Commands/Conversion/*CommandHandler.cs` | Call webhook service after completion |
+| `Api/Models/*Request.cs` | Add WebhookUrl to request models |
+| `Infrastructure/DependencyInjection.cs` | Register webhook service with HttpClient |
+| `appsettings.json` | Add WebhookSettings section |
+
+### Registration
+
+```csharp
+// Infrastructure/DependencyInjection.cs
+services.Configure<WebhookSettings>(configuration.GetSection(WebhookSettings.SectionName));
+services.AddHttpClient<IWebhookService, WebhookService>();
+```
 
 ---
 
@@ -381,6 +468,11 @@ finally
     "ExecutablePath": null,
     "Timeout": 30000
   },
+  "WebhookSettings": {
+    "TimeoutSeconds": 30,
+    "MaxRetries": 3,
+    "RetryDelayMilliseconds": 1000
+  },
   "RateLimiting": {
     "RequestsPerHour": 100
   },
@@ -426,10 +518,11 @@ The task is COMPLETE when ALL of the following are true:
 9. ✅ All API endpoints implemented with Swagger docs
 10. ✅ HTML to PDF conversion works with PuppeteerSharp
 11. ✅ Markdown to PDF conversion works with Markdig + PuppeteerSharp
-12. ✅ JWT + API Key authentication functional
-13. ✅ Unit tests exist with 80%+ coverage
-14. ✅ docker-compose.yml exists and works
-15. ✅ README.md documents how to run the project
+12. ✅ Webhook notifications work for completed/failed jobs
+13. ✅ JWT + API Key authentication functional
+14. ✅ Unit tests exist with 80%+ coverage
+15. ✅ docker-compose.yml exists and works
+16. ✅ README.md documents how to run the project
 
 ---
 
@@ -449,4 +542,4 @@ When ALL completion criteria are met, output:
 
 ---
 
-**Current Status:** All features implemented. Ready for new feature development.
+**Current Status:** Adding webhook notifications for completed jobs.
