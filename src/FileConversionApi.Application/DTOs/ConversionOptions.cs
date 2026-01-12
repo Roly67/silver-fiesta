@@ -78,4 +78,9 @@ public class ConversionOptions
     /// Gets or sets the watermark options for PDF output.
     /// </summary>
     public WatermarkOptions? Watermark { get; set; }
+
+    /// <summary>
+    /// Gets or sets the password protection options for PDF output.
+    /// </summary>
+    public PasswordProtectionOptions? PasswordProtection { get; set; }
 }
