@@ -30,7 +30,7 @@
 <td width="50%">
 
 ### 🔄 Document Conversion
-Convert HTML content or URLs to pixel-perfect PDFs using PuppeteerSharp with full control over page size, margins, and rendering options.
+Convert HTML, Markdown, or URLs to pixel-perfect PDFs using PuppeteerSharp with full control over page size, margins, and rendering options.
 
 </td>
 <td width="50%">
@@ -74,9 +74,16 @@ Monitor conversion progress, access history, and download results with comprehen
 docker-compose up -d
 ```
 
-> **API Endpoints**
-> HTTP: `http://localhost:5000`
-> HTTPS: `https://localhost:5001`
+> **API Endpoint:** `http://localhost:5000`
+>
+> The development setup uses HTTP only. For production, configure HTTPS with proper certificates.
+
+**Pull from GitHub Container Registry:**
+
+```bash
+# Multi-arch image (amd64/arm64)
+docker pull ghcr.io/roly67/silver-fiesta:latest
+```
 
 <details>
 <summary><strong>📋 Manual Setup</strong></summary>
@@ -234,6 +241,11 @@ X-API-Key: your-api-key-here
 <td>Convert HTML/URL to PDF</td>
 </tr>
 <tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/convert/markdown-to-pdf</code></td>
+<td>Convert Markdown to PDF</td>
+</tr>
+<tr>
 <td><code>GET</code></td>
 <td><code>/api/v1/convert/{id}</code></td>
 <td>Get job status</td>
@@ -281,6 +293,37 @@ Content-Type: application/json
   "fileName": "example.pdf"
 }
 ```
+
+</details>
+
+<details>
+<summary><strong>Convert Markdown to PDF</strong></summary>
+
+```json
+POST /api/v1/convert/markdown-to-pdf
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "markdown": "# Hello World\n\nThis is **bold** and *italic* text.",
+  "fileName": "document.pdf",
+  "options": {
+    "pageSize": "A4",
+    "landscape": false,
+    "marginTop": 25,
+    "marginBottom": 25,
+    "marginLeft": 20,
+    "marginRight": 20
+  }
+}
+```
+
+**Supported Markdown features:**
+- Headings, paragraphs, lists
+- Bold, italic, strikethrough
+- Code blocks with syntax highlighting
+- Tables, blockquotes
+- Links and images
 
 </details>
 
@@ -376,10 +419,13 @@ tests/
 ```json
 {
   "PuppeteerSettings": {
-    "ExecutablePath": "/usr/bin/chromium"
+    "ExecutablePath": null,
+    "Timeout": 30000
   }
 }
 ```
+
+> **Note:** When `ExecutablePath` is `null`, PuppeteerSharp automatically downloads a compatible Chromium version. This is the recommended approach for Docker deployments.
 
 </details>
 
