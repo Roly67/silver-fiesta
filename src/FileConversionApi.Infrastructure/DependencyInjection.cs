@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddSingleton<IMetricsService, PrometheusMetricsService>();
         services.AddSingleton<IPdfWatermarkService, PdfWatermarkService>();
         services.AddSingleton<IPdfEncryptionService, PdfEncryptionService>();
+        services.AddSingleton<IPdfManipulationService, PdfManipulationService>();
 
         // Converters
         services.AddSingleton<HtmlToPdfConverter>();

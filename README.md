@@ -312,6 +312,16 @@ X-API-Key: your-api-key-here
 <td>Convert image formats (PNG, JPEG, WebP)</td>
 </tr>
 <tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/convert/pdf/merge</code></td>
+<td>Merge multiple PDFs into one</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/convert/pdf/split</code></td>
+<td>Split PDF into multiple files</td>
+</tr>
+<tr>
 <td><code>GET</code></td>
 <td><code>/api/v1/convert/{id}</code></td>
 <td>Get job status</td>
@@ -474,6 +484,69 @@ Encrypt PDF output with passwords and set permissions by including the `password
 - If `ownerPassword` is not specified, it defaults to the `userPassword`
 - Owner password grants full access regardless of permission settings
 - Can be combined with watermarking for additional document protection
+
+</details>
+
+<details>
+<summary><strong>PDF Merge</strong></summary>
+
+Merge multiple PDF documents into a single PDF:
+
+```json
+POST /api/v1/convert/pdf/merge
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "pdfDocuments": [
+    "base64-encoded-pdf-1",
+    "base64-encoded-pdf-2",
+    "base64-encoded-pdf-3"
+  ],
+  "fileName": "merged.pdf",
+  "webhookUrl": "https://example.com/webhooks/conversion"
+}
+```
+
+**Notes:**
+- At least two PDF documents are required
+- PDFs are merged in the order provided
+- Output is a single merged PDF file
+
+</details>
+
+<details>
+<summary><strong>PDF Split</strong></summary>
+
+Split a PDF document into multiple PDFs:
+
+```json
+POST /api/v1/convert/pdf/split
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "pdfData": "base64-encoded-pdf",
+  "fileName": "document.pdf",
+  "options": {
+    "pageRanges": ["1-3", "5", "7-10"],
+    "splitIntoSinglePages": false
+  },
+  "webhookUrl": "https://example.com/webhooks/conversion"
+}
+```
+
+**Split Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `pageRanges` | string[] | null | Page ranges to extract (e.g., "1-3", "5") |
+| `splitIntoSinglePages` | bool | false | Split into individual pages |
+
+**Notes:**
+- Output is a ZIP file containing the split PDFs
+- If no options specified, defaults to splitting into single pages
+- Page numbers are 1-based
+- Page ranges use format "start-end" (e.g., "1-5") or single page (e.g., "3")
 
 </details>
 

@@ -367,7 +367,7 @@
     <section class="hero">
         <div class="container">
             <h2>File Conversion API</h2>
-            <p>Production-ready .NET 10 REST API for converting documents and images. HTML/Markdown to PDF, Markdown to HTML, and image format conversions with enterprise-grade authentication, webhooks, and monitoring.</p>
+            <p>Production-ready .NET 10 REST API for converting documents and images. HTML/Markdown to PDF, Markdown to HTML, image format conversions, PDF watermarking, password protection, and merge/split with enterprise-grade authentication, webhooks, and monitoring.</p>
 
             <div class="badges">
                 <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat&logo=dotnet" alt=".NET 10">
@@ -444,6 +444,21 @@
                     <h4>Enhanced Health Checks</h4>
                     <p>Detailed /health endpoint reporting database, Chromium, and disk space status.</p>
                 </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128167;</div>
+                    <h4>PDF Watermarking</h4>
+                    <p>Add text watermarks to PDFs with customizable font, color, opacity, rotation, and positioning.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128272;</div>
+                    <h4>PDF Security</h4>
+                    <p>Password protection with user/owner passwords and granular permission controls for printing, copying, and editing.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128466;</div>
+                    <h4>PDF Merge & Split</h4>
+                    <p>Combine multiple PDFs into one or split PDFs by page ranges into separate files.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -508,6 +523,20 @@
                         <span class="method method-post">POST</span>
                         <span class="endpoint-path">/api/v1/convert/image</span>
                         <span class="endpoint-desc">Convert image formats (PNG, JPEG, WebP)</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/pdf/merge</span>
+                        <span class="endpoint-desc">Merge multiple PDFs into one</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/pdf/split</span>
+                        <span class="endpoint-desc">Split PDF into multiple files</span>
                     </div>
                 </div>
                 <div class="endpoint">

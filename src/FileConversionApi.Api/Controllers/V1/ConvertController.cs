@@ -4,6 +4,7 @@
 
 using FileConversionApi.Api.Models;
 using FileConversionApi.Application.Commands.Conversion;
+using FileConversionApi.Application.Commands.Pdf;
 using FileConversionApi.Application.DTOs;
 using FileConversionApi.Application.Queries.Conversion;
 
@@ -210,6 +211,102 @@ public class ConvertController : ControllerBase
             {
                 Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
                 Title = "Conversion Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
+    /// Merges multiple PDF documents into one.
+    /// </summary>
+    /// <param name="request">The merge request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The job details.</returns>
+    /// <remarks>
+    /// PDF documents should be base64 encoded. At least two documents are required.
+    /// </remarks>
+    /// <response code="202">Merge job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("pdf/merge")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> MergePdfs(
+        [FromBody] MergePdfsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new MergePdfsCommand
+        {
+            PdfDocuments = request.PdfDocuments,
+            FileName = request.FileName,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Merge Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
+    /// Splits a PDF document into multiple PDFs.
+    /// </summary>
+    /// <param name="request">The split request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The job details.</returns>
+    /// <remarks>
+    /// PDF data should be base64 encoded. The output is a ZIP file containing the split PDFs.
+    /// You can split by page ranges (e.g., "1-3", "5", "7-10") or into individual pages.
+    /// </remarks>
+    /// <response code="202">Split job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("pdf/split")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> SplitPdf(
+        [FromBody] SplitPdfRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new SplitPdfCommand
+        {
+            PdfData = request.PdfData,
+            FileName = request.FileName,
+            Options = request.Options,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Split Failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = result.Error.Message,
                 ErrorCode = result.Error.Code,
