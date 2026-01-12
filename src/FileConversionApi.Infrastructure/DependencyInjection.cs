@@ -4,10 +4,12 @@
 
 using FileConversionApi.Application.Interfaces;
 using FileConversionApi.Infrastructure.Converters;
+using FileConversionApi.Infrastructure.HealthChecks;
 using FileConversionApi.Infrastructure.Options;
 using FileConversionApi.Infrastructure.Persistence;
 using FileConversionApi.Infrastructure.Persistence.Repositories;
 using FileConversionApi.Infrastructure.Services;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +40,7 @@ public static class DependencyInjection
         services.Configure<PuppeteerSettings>(configuration.GetSection(PuppeteerSettings.SectionName));
         services.Configure<WebhookSettings>(configuration.GetSection(WebhookSettings.SectionName));
         services.Configure<JobCleanupSettings>(configuration.GetSection(JobCleanupSettings.SectionName));
+        services.Configure<HealthCheckSettings>(configuration.GetSection(HealthCheckSettings.SectionName));
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -55,6 +58,12 @@ public static class DependencyInjection
         services.AddSingleton<IFileConverter>(sp => sp.GetRequiredService<HtmlToPdfConverter>());
         services.AddSingleton<IFileConverter, MarkdownToPdfConverter>();
         services.AddSingleton<IConverterFactory, ConverterFactory>();
+
+        // Health Checks
+        services.AddHealthChecks()
+            .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"])
+            .AddCheck<ChromiumHealthCheck>("chromium", tags: ["ready"])
+            .AddCheck<DiskSpaceHealthCheck>("diskSpace", tags: ["ready"]);
 
         return services;
     }

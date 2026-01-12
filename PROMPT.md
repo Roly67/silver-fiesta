@@ -732,6 +732,254 @@ Unit tests should verify:
 
 ---
 
+## Health Check Improvements
+
+Enhance the health endpoint to provide detailed component health status for monitoring and Kubernetes readiness probes.
+
+### Strategy
+
+Extend the existing `/health` endpoint to report detailed status of all critical system components with proper HTTP status codes.
+
+### Health Components
+
+| Component | Check | Description |
+|-----------|-------|-------------|
+| Database | EF Core connection | Verify PostgreSQL connectivity |
+| Chromium | PuppeteerSharp browser launch | Verify PDF generation capability |
+| Disk Space | Available storage | Ensure sufficient temp storage |
+
+### Response Format
+
+```json
+{
+  "status": "Healthy",
+  "totalDuration": "00:00:00.1234567",
+  "entries": {
+    "database": {
+      "status": "Healthy",
+      "duration": "00:00:00.0123456",
+      "description": "PostgreSQL connection successful"
+    },
+    "chromium": {
+      "status": "Healthy",
+      "duration": "00:00:00.1000000",
+      "description": "Chromium browser available"
+    },
+    "diskSpace": {
+      "status": "Healthy",
+      "duration": "00:00:00.0001234",
+      "description": "1.5 GB available",
+      "data": {
+        "availableBytes": 1610612736,
+        "minimumRequiredBytes": 104857600
+      }
+    }
+  }
+}
+```
+
+### HTTP Status Codes
+
+| Status | HTTP Code | Description |
+|--------|-----------|-------------|
+| Healthy | 200 | All components healthy |
+| Degraded | 200 | Some non-critical components degraded |
+| Unhealthy | 503 | Critical component failure |
+
+### Implementation
+
+#### 1. Database Health Check
+
+```csharp
+// Infrastructure/HealthChecks/DatabaseHealthCheck.cs
+public class DatabaseHealthCheck : IHealthCheck
+{
+    private readonly AppDbContext dbContext;
+
+    public async Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await dbContext.Database.CanConnectAsync(cancellationToken);
+            return HealthCheckResult.Healthy("PostgreSQL connection successful");
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("PostgreSQL connection failed", ex);
+        }
+    }
+}
+```
+
+#### 2. Chromium Health Check
+
+```csharp
+// Infrastructure/HealthChecks/ChromiumHealthCheck.cs
+public class ChromiumHealthCheck : IHealthCheck
+{
+    private readonly IBrowserFactory browserFactory;
+
+    public async Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Quick browser availability check
+            using var browser = await browserFactory.CreateBrowserAsync(cancellationToken);
+            return HealthCheckResult.Healthy("Chromium browser available");
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("Chromium browser unavailable", ex);
+        }
+    }
+}
+```
+
+#### 3. Disk Space Health Check
+
+```csharp
+// Infrastructure/HealthChecks/DiskSpaceHealthCheck.cs
+public class DiskSpaceHealthCheck : IHealthCheck
+{
+    private const long MinimumRequiredBytes = 100 * 1024 * 1024; // 100 MB
+
+    public Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var tempPath = Path.GetTempPath();
+        var driveInfo = new DriveInfo(Path.GetPathRoot(tempPath)!);
+        var availableBytes = driveInfo.AvailableFreeSpace;
+
+        var data = new Dictionary<string, object>
+        {
+            ["availableBytes"] = availableBytes,
+            ["minimumRequiredBytes"] = MinimumRequiredBytes
+        };
+
+        if (availableBytes < MinimumRequiredBytes)
+        {
+            return Task.FromResult(HealthCheckResult.Unhealthy(
+                $"Low disk space: {availableBytes / 1024 / 1024} MB available",
+                data: data));
+        }
+
+        return Task.FromResult(HealthCheckResult.Healthy(
+            $"{availableBytes / 1024 / 1024 / 1024.0:F1} GB available",
+            data: data));
+    }
+}
+```
+
+### Registration
+
+```csharp
+// Program.cs or Infrastructure/DependencyInjection.cs
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "ready" })
+    .AddCheck<ChromiumHealthCheck>("chromium", tags: new[] { "ready" })
+    .AddCheck<DiskSpaceHealthCheck>("diskSpace", tags: new[] { "ready" });
+
+// In Program.cs middleware
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = WriteHealthCheckResponse
+});
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false // Liveness: just check app is running
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = WriteHealthCheckResponse
+});
+```
+
+### Health Check Response Writer
+
+```csharp
+// Api/HealthChecks/HealthCheckResponseWriter.cs
+public static class HealthCheckResponseWriter
+{
+    public static async Task WriteHealthCheckResponse(
+        HttpContext context,
+        HealthReport report)
+    {
+        context.Response.ContentType = "application/json";
+
+        var response = new
+        {
+            status = report.Status.ToString(),
+            totalDuration = report.TotalDuration.ToString(),
+            entries = report.Entries.ToDictionary(
+                entry => entry.Key,
+                entry => new
+                {
+                    status = entry.Value.Status.ToString(),
+                    duration = entry.Value.Duration.ToString(),
+                    description = entry.Value.Description,
+                    data = entry.Value.Data.Count > 0 ? entry.Value.Data : null,
+                    exception = entry.Value.Exception?.Message
+                })
+        };
+
+        await context.Response.WriteAsJsonAsync(response);
+    }
+}
+```
+
+### Endpoints
+
+| Endpoint | Purpose | Use Case |
+|----------|---------|----------|
+| `/health` | Full health check | Monitoring dashboards |
+| `/health/live` | Liveness probe | K8s liveness (is app running?) |
+| `/health/ready` | Readiness probe | K8s readiness (can accept traffic?) |
+
+### Configuration
+
+```json
+{
+  "HealthChecks": {
+    "DiskSpaceMinimumMB": 100,
+    "ChromiumTimeoutSeconds": 30
+  }
+}
+```
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `Infrastructure/HealthChecks/DatabaseHealthCheck.cs` | Create DB health check |
+| `Infrastructure/HealthChecks/ChromiumHealthCheck.cs` | Create Chromium health check |
+| `Infrastructure/HealthChecks/DiskSpaceHealthCheck.cs` | Create disk space health check |
+| `Api/HealthChecks/HealthCheckResponseWriter.cs` | Create JSON response writer |
+| `Api/Program.cs` | Register health checks and endpoints |
+| `Infrastructure/DependencyInjection.cs` | Register health check services |
+
+### Testing
+
+Unit tests should verify:
+- Database health check returns healthy when connected
+- Database health check returns unhealthy on connection failure
+- Chromium health check returns healthy when browser available
+- Chromium health check returns unhealthy when browser unavailable
+- Disk space check returns healthy with sufficient space
+- Disk space check returns unhealthy with low space
+- Response writer formats output correctly
+- Liveness endpoint returns 200 without running checks
+- Readiness endpoint runs all tagged checks
+
+---
+
 ## Error Handling
 
 ### Use Result Pattern (NOT exceptions for business logic)
@@ -901,9 +1149,10 @@ The task is COMPLETE when ALL of the following are true:
 13. ✅ JWT + API Key authentication functional
 14. ✅ Rate limiting implemented with per-user and per-endpoint policies
 15. ✅ Job cleanup service auto-deletes expired jobs
-16. ✅ Unit tests exist with 80%+ coverage
-17. ✅ docker-compose.yml exists and works
-18. ✅ README.md documents how to run the project
+16. ✅ Health checks report detailed component status (DB, Chromium, disk)
+17. ✅ Unit tests exist with 80%+ coverage
+18. ✅ docker-compose.yml exists and works
+19. ✅ README.md documents how to run the project
 
 ---
 
@@ -923,4 +1172,4 @@ When ALL completion criteria are met, output:
 
 ---
 
-**Current Status:** All features implemented. Job cleanup/expiry complete.
+**Current Status:** All features implemented. Health check improvements complete.
