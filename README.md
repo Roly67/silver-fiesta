@@ -396,6 +396,48 @@ Content-Type: application/json
 </details>
 
 <details>
+<summary><strong>PDF Watermarking</strong></summary>
+
+Add watermarks to PDF output by including the `watermark` option in any PDF conversion request:
+
+```json
+{
+  "htmlContent": "<html><body><h1>My Document</h1></body></html>",
+  "fileName": "document.pdf",
+  "options": {
+    "watermark": {
+      "text": "CONFIDENTIAL",
+      "fontSize": 48,
+      "fontFamily": "Helvetica",
+      "color": "#FF0000",
+      "opacity": 0.3,
+      "rotation": -45,
+      "position": "Center",
+      "allPages": true
+    }
+  }
+}
+```
+
+**Watermark Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `text` | string | required | The watermark text |
+| `fontSize` | int | 48 | Font size in points |
+| `fontFamily` | string | Helvetica | Font family name |
+| `color` | string | #808080 | Color in hex format |
+| `opacity` | double | 0.3 | Opacity (0.0 to 1.0) |
+| `rotation` | double | -45 | Rotation angle in degrees |
+| `position` | string | Center | Position on page |
+| `allPages` | bool | true | Apply to all pages |
+| `pageNumbers` | int[] | null | Specific pages (if allPages is false) |
+
+**Position Values:**
+`Center`, `TopLeft`, `TopCenter`, `TopRight`, `BottomLeft`, `BottomCenter`, `BottomRight`, `Tile`
+
+</details>
+
+<details>
 <summary><strong>Convert Markdown to HTML</strong></summary>
 
 ```json

@@ -73,4 +73,9 @@ public class ConversionOptions
     /// Gets or sets the image quality (1-100, for JPEG/WebP).
     /// </summary>
     public int? ImageQuality { get; set; }
+
+    /// <summary>
+    /// Gets or sets the watermark options for PDF output.
+    /// </summary>
+    public WatermarkOptions? Watermark { get; set; }
 }

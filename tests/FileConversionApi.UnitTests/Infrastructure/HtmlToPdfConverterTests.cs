@@ -2,6 +2,7 @@
 // FileConversionApi
 // </copyright>
 
+using FileConversionApi.Application.Interfaces;
 using FileConversionApi.Infrastructure.Converters;
 using FileConversionApi.Infrastructure.Options;
 using FluentAssertions;
@@ -17,6 +18,7 @@ namespace FileConversionApi.UnitTests.Infrastructure;
 public class HtmlToPdfConverterTests
 {
     private readonly Mock<ILogger<HtmlToPdfConverter>> loggerMock;
+    private readonly Mock<IPdfWatermarkService> watermarkServiceMock;
     private readonly PuppeteerSettings settings;
 
     /// <summary>
@@ -25,6 +27,7 @@ public class HtmlToPdfConverterTests
     public HtmlToPdfConverterTests()
     {
         this.loggerMock = new Mock<ILogger<HtmlToPdfConverter>>();
+        this.watermarkServiceMock = new Mock<IPdfWatermarkService>();
         this.settings = new PuppeteerSettings
         {
             ExecutablePath = null,
@@ -39,11 +42,28 @@ public class HtmlToPdfConverterTests
     public void Constructor_WhenSettingsIsNull_ThrowsArgumentNullException()
     {
         // Act
-        var act = () => new HtmlToPdfConverter(null!, this.loggerMock.Object);
+        var act = () => new HtmlToPdfConverter(null!, this.watermarkServiceMock.Object, this.loggerMock.Object);
 
         // Assert
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("settings");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when watermark service is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenWatermarkServiceIsNull_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var options = Options.Create(this.settings);
+
+        // Act
+        var act = () => new HtmlToPdfConverter(options, null!, this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("watermarkService");
     }
 
     /// <summary>
@@ -56,7 +76,7 @@ public class HtmlToPdfConverterTests
         var options = Options.Create(this.settings);
 
         // Act
-        var act = () => new HtmlToPdfConverter(options, null!);
+        var act = () => new HtmlToPdfConverter(options, this.watermarkServiceMock.Object, null!);
 
         // Assert
         act.Should().Throw<ArgumentNullException>()
@@ -71,7 +91,7 @@ public class HtmlToPdfConverterTests
     {
         // Arrange
         var options = Options.Create(this.settings);
-        var converter = new HtmlToPdfConverter(options, this.loggerMock.Object);
+        var converter = new HtmlToPdfConverter(options, this.watermarkServiceMock.Object, this.loggerMock.Object);
 
         // Act
         var result = converter.SourceFormat;
@@ -88,7 +108,7 @@ public class HtmlToPdfConverterTests
     {
         // Arrange
         var options = Options.Create(this.settings);
-        var converter = new HtmlToPdfConverter(options, this.loggerMock.Object);
+        var converter = new HtmlToPdfConverter(options, this.watermarkServiceMock.Object, this.loggerMock.Object);
 
         // Act
         var result = converter.TargetFormat;
@@ -106,7 +126,7 @@ public class HtmlToPdfConverterTests
     {
         // Arrange
         var options = Options.Create(this.settings);
-        var converter = new HtmlToPdfConverter(options, this.loggerMock.Object);
+        var converter = new HtmlToPdfConverter(options, this.watermarkServiceMock.Object, this.loggerMock.Object);
 
         // Act
         var act = async () => await converter.DisposeAsync();
@@ -124,7 +144,7 @@ public class HtmlToPdfConverterTests
     {
         // Arrange
         var options = Options.Create(this.settings);
-        var converter = new HtmlToPdfConverter(options, this.loggerMock.Object);
+        var converter = new HtmlToPdfConverter(options, this.watermarkServiceMock.Object, this.loggerMock.Object);
 
         // Act
         var act = async () =>
@@ -153,7 +173,7 @@ public class HtmlToPdfConverterTests
         var options = Options.Create(customSettings);
 
         // Act
-        var act = () => new HtmlToPdfConverter(options, this.loggerMock.Object);
+        var act = () => new HtmlToPdfConverter(options, this.watermarkServiceMock.Object, this.loggerMock.Object);
 
         // Assert
         act.Should().NotThrow();

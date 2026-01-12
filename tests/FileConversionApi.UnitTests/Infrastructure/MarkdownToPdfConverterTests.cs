@@ -2,6 +2,7 @@
 // FileConversionApi
 // </copyright>
 
+using FileConversionApi.Application.Interfaces;
 using FileConversionApi.Infrastructure.Converters;
 using FileConversionApi.Infrastructure.Options;
 using FluentAssertions;
@@ -18,6 +19,7 @@ public class MarkdownToPdfConverterTests
 {
     private readonly Mock<ILogger<HtmlToPdfConverter>> htmlConverterLoggerMock;
     private readonly Mock<ILogger<MarkdownToPdfConverter>> loggerMock;
+    private readonly Mock<IPdfWatermarkService> watermarkServiceMock;
     private readonly HtmlToPdfConverter htmlToPdfConverter;
 
     /// <summary>
@@ -27,6 +29,7 @@ public class MarkdownToPdfConverterTests
     {
         this.htmlConverterLoggerMock = new Mock<ILogger<HtmlToPdfConverter>>();
         this.loggerMock = new Mock<ILogger<MarkdownToPdfConverter>>();
+        this.watermarkServiceMock = new Mock<IPdfWatermarkService>();
 
         var settings = new PuppeteerSettings
         {
@@ -35,7 +38,7 @@ public class MarkdownToPdfConverterTests
         };
         var options = Options.Create(settings);
 
-        this.htmlToPdfConverter = new HtmlToPdfConverter(options, this.htmlConverterLoggerMock.Object);
+        this.htmlToPdfConverter = new HtmlToPdfConverter(options, this.watermarkServiceMock.Object, this.htmlConverterLoggerMock.Object);
     }
 
     /// <summary>
