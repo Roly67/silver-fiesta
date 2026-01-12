@@ -63,6 +63,9 @@ public class ConversionJobConfiguration : IEntityTypeConfiguration<ConversionJob
 
         builder.Property(j => j.CompletedAt);
 
+        builder.Property(j => j.WebhookUrl)
+            .HasMaxLength(2048);
+
         builder.HasIndex(j => j.UserId);
         builder.HasIndex(j => j.Status);
         builder.HasIndex(j => j.CreatedAt);

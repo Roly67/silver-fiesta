@@ -81,18 +81,25 @@ public class ConversionJob
     public User? User { get; private set; }
 
     /// <summary>
+    /// Gets the webhook URL to notify when the job completes.
+    /// </summary>
+    public string? WebhookUrl { get; private set; }
+
+    /// <summary>
     /// Creates a new conversion job.
     /// </summary>
     /// <param name="userId">The user identifier.</param>
     /// <param name="sourceFormat">The source format.</param>
     /// <param name="targetFormat">The target format.</param>
     /// <param name="inputFileName">The input file name.</param>
+    /// <param name="webhookUrl">The optional webhook URL to notify on completion.</param>
     /// <returns>A new <see cref="ConversionJob"/>.</returns>
     public static ConversionJob Create(
         UserId userId,
         string sourceFormat,
         string targetFormat,
-        string inputFileName)
+        string inputFileName,
+        string? webhookUrl = null)
     {
         return new ConversionJob
         {
@@ -103,6 +110,7 @@ public class ConversionJob
             InputFileName = inputFileName,
             Status = ConversionStatus.Pending,
             CreatedAt = DateTimeOffset.UtcNow,
+            WebhookUrl = webhookUrl,
         };
     }
 

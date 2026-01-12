@@ -30,6 +30,7 @@ public class ConvertMarkdownToPdfCommandHandlerTests
     private readonly Mock<IUnitOfWork> unitOfWorkMock;
     private readonly Mock<IConverterFactory> converterFactoryMock;
     private readonly Mock<ICurrentUserService> currentUserServiceMock;
+    private readonly Mock<IWebhookService> webhookServiceMock;
     private readonly Mock<ILogger<ConvertMarkdownToPdfCommandHandler>> loggerMock;
     private readonly Mock<IFileConverter> fileConverterMock;
     private readonly ConvertMarkdownToPdfCommandHandler handler;
@@ -43,6 +44,7 @@ public class ConvertMarkdownToPdfCommandHandlerTests
         this.unitOfWorkMock = new Mock<IUnitOfWork>();
         this.converterFactoryMock = new Mock<IConverterFactory>();
         this.currentUserServiceMock = new Mock<ICurrentUserService>();
+        this.webhookServiceMock = new Mock<IWebhookService>();
         this.loggerMock = new Mock<ILogger<ConvertMarkdownToPdfCommandHandler>>();
         this.fileConverterMock = new Mock<IFileConverter>();
 
@@ -51,6 +53,7 @@ public class ConvertMarkdownToPdfCommandHandlerTests
             this.unitOfWorkMock.Object,
             this.converterFactoryMock.Object,
             this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
             this.loggerMock.Object);
     }
 
@@ -369,6 +372,7 @@ public class ConvertMarkdownToPdfCommandHandlerTests
             this.unitOfWorkMock.Object,
             this.converterFactoryMock.Object,
             this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
@@ -388,6 +392,7 @@ public class ConvertMarkdownToPdfCommandHandlerTests
             null!,
             this.converterFactoryMock.Object,
             this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
@@ -407,6 +412,7 @@ public class ConvertMarkdownToPdfCommandHandlerTests
             this.unitOfWorkMock.Object,
             null!,
             this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
@@ -426,11 +432,32 @@ public class ConvertMarkdownToPdfCommandHandlerTests
             this.unitOfWorkMock.Object,
             this.converterFactoryMock.Object,
             null!,
+            this.webhookServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("currentUserService");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when webhookService is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenWebhookServiceIsNull_ThrowsArgumentNullException()
+    {
+        // Act
+        var act = () => new ConvertMarkdownToPdfCommandHandler(
+            this.jobRepositoryMock.Object,
+            this.unitOfWorkMock.Object,
+            this.converterFactoryMock.Object,
+            this.currentUserServiceMock.Object,
+            null!,
+            this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("webhookService");
     }
 
     /// <summary>
@@ -445,6 +472,7 @@ public class ConvertMarkdownToPdfCommandHandlerTests
             this.unitOfWorkMock.Object,
             this.converterFactoryMock.Object,
             this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
             null!);
 
         // Assert

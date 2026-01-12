@@ -56,6 +56,7 @@ public class ConvertController : ControllerBase
             Url = request.Url,
             FileName = request.FileName,
             Options = request.Options,
+            WebhookUrl = request.WebhookUrl,
         };
 
         var result = await this.mediator.Send(command, cancellationToken);
@@ -100,6 +101,7 @@ public class ConvertController : ControllerBase
             Markdown = request.Markdown,
             FileName = request.FileName,
             Options = request.Options,
+            WebhookUrl = request.WebhookUrl,
         };
 
         var result = await this.mediator.Send(command, cancellationToken);

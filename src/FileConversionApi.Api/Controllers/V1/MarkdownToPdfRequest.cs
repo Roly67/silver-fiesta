@@ -25,4 +25,9 @@ public record MarkdownToPdfRequest
     /// Gets the conversion options.
     /// </summary>
     public ConversionOptions? Options { get; init; }
+
+    /// <summary>
+    /// Gets the webhook URL to notify when conversion completes.
+    /// </summary>
+    public string? WebhookUrl { get; init; }
 }
