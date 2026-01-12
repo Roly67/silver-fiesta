@@ -1,0 +1,520 @@
+// <copyright file="ConvertMarkdownToHtmlCommandHandlerTests.cs" company="FileConversionApi">
+// FileConversionApi
+// </copyright>
+
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+
+using FileConversionApi.Application.Commands.Conversion;
+using FileConversionApi.Application.DTOs;
+using FileConversionApi.Application.Interfaces;
+using FileConversionApi.Domain.Entities;
+using FileConversionApi.Domain.Enums;
+using FileConversionApi.Domain.Primitives;
+using FileConversionApi.Domain.ValueObjects;
+
+using FluentAssertions;
+
+using Microsoft.Extensions.Logging;
+
+using Moq;
+
+using Xunit;
+
+namespace FileConversionApi.UnitTests.Application.Commands.Conversion;
+
+/// <summary>
+/// Unit tests for <see cref="ConvertMarkdownToHtmlCommandHandler"/>.
+/// </summary>
+public class ConvertMarkdownToHtmlCommandHandlerTests
+{
+    private readonly Mock<IConversionJobRepository> jobRepositoryMock;
+    private readonly Mock<IUnitOfWork> unitOfWorkMock;
+    private readonly Mock<IConverterFactory> converterFactoryMock;
+    private readonly Mock<ICurrentUserService> currentUserServiceMock;
+    private readonly Mock<IWebhookService> webhookServiceMock;
+    private readonly Mock<IMetricsService> metricsServiceMock;
+    private readonly Mock<ILogger<ConvertMarkdownToHtmlCommandHandler>> loggerMock;
+    private readonly Mock<IFileConverter> fileConverterMock;
+    private readonly ConvertMarkdownToHtmlCommandHandler handler;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConvertMarkdownToHtmlCommandHandlerTests"/> class.
+    /// </summary>
+    public ConvertMarkdownToHtmlCommandHandlerTests()
+    {
+        this.jobRepositoryMock = new Mock<IConversionJobRepository>();
+        this.unitOfWorkMock = new Mock<IUnitOfWork>();
+        this.converterFactoryMock = new Mock<IConverterFactory>();
+        this.currentUserServiceMock = new Mock<ICurrentUserService>();
+        this.webhookServiceMock = new Mock<IWebhookService>();
+        this.metricsServiceMock = new Mock<IMetricsService>();
+        this.loggerMock = new Mock<ILogger<ConvertMarkdownToHtmlCommandHandler>>();
+        this.fileConverterMock = new Mock<IFileConverter>();
+
+        this.handler = new ConvertMarkdownToHtmlCommandHandler(
+            this.jobRepositoryMock.Object,
+            this.unitOfWorkMock.Object,
+            this.converterFactoryMock.Object,
+            this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
+            this.metricsServiceMock.Object,
+            this.loggerMock.Object);
+    }
+
+    /// <summary>
+    /// Tests that Handle returns success with job DTO when conversion is successful.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task Handle_WhenConversionIsSuccessful_ReturnsSuccessWithJobDto()
+    {
+        // Arrange
+        var userId = UserId.New();
+        var command = new ConvertMarkdownToHtmlCommand
+        {
+            Markdown = "# Hello World\n\nThis is a test.",
+            FileName = "test.md",
+        };
+        var expectedHtmlBytes = "<html><body><h1>Hello World</h1></body></html>"u8.ToArray();
+
+        this.currentUserServiceMock
+            .Setup(x => x.UserId)
+            .Returns(userId);
+
+        this.converterFactoryMock
+            .Setup(x => x.GetConverter("markdown", "html"))
+            .Returns(this.fileConverterMock.Object);
+
+        this.fileConverterMock
+            .Setup(x => x.ConvertAsync(It.IsAny<Stream>(), It.IsAny<ConversionOptions>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(expectedHtmlBytes));
+
+        this.jobRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<ConversionJob>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        this.unitOfWorkMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Act
+        var result = await this.handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.SourceFormat.Should().Be("markdown");
+        result.Value.TargetFormat.Should().Be("html");
+        result.Value.Status.Should().Be(ConversionStatus.Completed);
+        result.Value.InputFileName.Should().Be("test.md");
+        result.Value.OutputFileName.Should().Be("test.html");
+
+        this.converterFactoryMock.Verify(x => x.GetConverter("markdown", "html"), Times.Once);
+        this.jobRepositoryMock.Verify(x => x.AddAsync(It.IsAny<ConversionJob>(), It.IsAny<CancellationToken>()), Times.Once);
+        this.metricsServiceMock.Verify(x => x.RecordConversionStarted("markdown", "html"), Times.Once);
+        this.metricsServiceMock.Verify(x => x.RecordConversionCompleted("markdown", "html", It.IsAny<double>()), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Handle returns unauthorized error when user is not authenticated.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task Handle_WhenUserIsNotAuthenticated_ReturnsUnauthorizedError()
+    {
+        // Arrange
+        var command = new ConvertMarkdownToHtmlCommand
+        {
+            Markdown = "# Test",
+        };
+
+        this.currentUserServiceMock
+            .Setup(x => x.UserId)
+            .Returns(default(UserId?));
+
+        // Act
+        var result = await this.handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Auth.Unauthorized");
+
+        this.converterFactoryMock.Verify(x => x.GetConverter(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        this.jobRepositoryMock.Verify(x => x.AddAsync(It.IsAny<ConversionJob>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Tests that Handle returns unsupported conversion error when converter is not found.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task Handle_WhenConverterNotFound_ReturnsUnsupportedConversionError()
+    {
+        // Arrange
+        var userId = UserId.New();
+        var command = new ConvertMarkdownToHtmlCommand
+        {
+            Markdown = "# Test",
+        };
+
+        this.currentUserServiceMock
+            .Setup(x => x.UserId)
+            .Returns(userId);
+
+        this.converterFactoryMock
+            .Setup(x => x.GetConverter("markdown", "html"))
+            .Returns(default(IFileConverter));
+
+        // Act
+        var result = await this.handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("ConversionJob.UnsupportedConversion");
+
+        this.jobRepositoryMock.Verify(x => x.AddAsync(It.IsAny<ConversionJob>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Tests that Handle returns failure when conversion fails.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task Handle_WhenConversionFails_ReturnsFailureWithError()
+    {
+        // Arrange
+        var userId = UserId.New();
+        var command = new ConvertMarkdownToHtmlCommand
+        {
+            Markdown = "# Test",
+            FileName = "test.md",
+        };
+        var conversionError = new Error("Conversion.Failed", "HTML generation failed");
+
+        this.currentUserServiceMock
+            .Setup(x => x.UserId)
+            .Returns(userId);
+
+        this.converterFactoryMock
+            .Setup(x => x.GetConverter("markdown", "html"))
+            .Returns(this.fileConverterMock.Object);
+
+        this.fileConverterMock
+            .Setup(x => x.ConvertAsync(It.IsAny<Stream>(), It.IsAny<ConversionOptions>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<byte[]>(conversionError));
+
+        this.jobRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<ConversionJob>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        this.unitOfWorkMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Act
+        var result = await this.handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(conversionError);
+        this.metricsServiceMock.Verify(x => x.RecordConversionFailed("markdown", "html"), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Handle returns failure when converter throws exception.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task Handle_WhenConverterThrowsException_ReturnsConversionFailedError()
+    {
+        // Arrange
+        var userId = UserId.New();
+        var command = new ConvertMarkdownToHtmlCommand
+        {
+            Markdown = "# Test",
+            FileName = "test.md",
+        };
+        var exceptionMessage = "Unexpected error during conversion";
+
+        this.currentUserServiceMock
+            .Setup(x => x.UserId)
+            .Returns(userId);
+
+        this.converterFactoryMock
+            .Setup(x => x.GetConverter("markdown", "html"))
+            .Returns(this.fileConverterMock.Object);
+
+        this.fileConverterMock
+            .Setup(x => x.ConvertAsync(It.IsAny<Stream>(), It.IsAny<ConversionOptions>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException(exceptionMessage));
+
+        this.jobRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<ConversionJob>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        this.unitOfWorkMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Act
+        var result = await this.handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("ConversionJob.ConversionFailed");
+        result.Error.Message.Should().Contain(exceptionMessage);
+        this.metricsServiceMock.Verify(x => x.RecordConversionFailed("markdown", "html"), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Handle generates default file name when none is provided.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task Handle_WhenFileNameNotProvided_GeneratesDefaultFileName()
+    {
+        // Arrange
+        var userId = UserId.New();
+        var command = new ConvertMarkdownToHtmlCommand
+        {
+            Markdown = "# Test",
+        };
+        var expectedHtmlBytes = "<html><body><h1>Test</h1></body></html>"u8.ToArray();
+        ConversionJob? capturedJob = null;
+
+        this.currentUserServiceMock
+            .Setup(x => x.UserId)
+            .Returns(userId);
+
+        this.converterFactoryMock
+            .Setup(x => x.GetConverter("markdown", "html"))
+            .Returns(this.fileConverterMock.Object);
+
+        this.fileConverterMock
+            .Setup(x => x.ConvertAsync(It.IsAny<Stream>(), It.IsAny<ConversionOptions>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(expectedHtmlBytes));
+
+        this.jobRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<ConversionJob>(), It.IsAny<CancellationToken>()))
+            .Callback<ConversionJob, CancellationToken>((job, _) => capturedJob = job)
+            .Returns(Task.CompletedTask);
+
+        this.unitOfWorkMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Act
+        var result = await this.handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        capturedJob.Should().NotBeNull();
+        capturedJob!.InputFileName.Should().StartWith("document_");
+        capturedJob.InputFileName.Should().EndWith(".md");
+    }
+
+    /// <summary>
+    /// Tests that Handle passes conversion options to converter.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task Handle_WhenOptionsProvided_PassesOptionsToConverter()
+    {
+        // Arrange
+        var userId = UserId.New();
+        var options = new ConversionOptions
+        {
+            PageSize = "Letter",
+            Landscape = true,
+            MarginTop = 30,
+        };
+        var command = new ConvertMarkdownToHtmlCommand
+        {
+            Markdown = "# Test",
+            FileName = "test.md",
+            Options = options,
+        };
+        var expectedHtmlBytes = "<html><body><h1>Test</h1></body></html>"u8.ToArray();
+        ConversionOptions? capturedOptions = null;
+
+        this.currentUserServiceMock
+            .Setup(x => x.UserId)
+            .Returns(userId);
+
+        this.converterFactoryMock
+            .Setup(x => x.GetConverter("markdown", "html"))
+            .Returns(this.fileConverterMock.Object);
+
+        this.fileConverterMock
+            .Setup(x => x.ConvertAsync(It.IsAny<Stream>(), It.IsAny<ConversionOptions>(), It.IsAny<CancellationToken>()))
+            .Callback<Stream, ConversionOptions, CancellationToken>((_, opts, _) => capturedOptions = opts)
+            .ReturnsAsync(Result.Success(expectedHtmlBytes));
+
+        this.jobRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<ConversionJob>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        this.unitOfWorkMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Act
+        await this.handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        capturedOptions.Should().NotBeNull();
+        capturedOptions!.PageSize.Should().Be("Letter");
+        capturedOptions.Landscape.Should().BeTrue();
+        capturedOptions.MarginTop.Should().Be(30);
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when jobRepository is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenJobRepositoryIsNull_ThrowsArgumentNullException()
+    {
+        // Act
+        var act = () => new ConvertMarkdownToHtmlCommandHandler(
+            null!,
+            this.unitOfWorkMock.Object,
+            this.converterFactoryMock.Object,
+            this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
+            this.metricsServiceMock.Object,
+            this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("jobRepository");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when unitOfWork is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenUnitOfWorkIsNull_ThrowsArgumentNullException()
+    {
+        // Act
+        var act = () => new ConvertMarkdownToHtmlCommandHandler(
+            this.jobRepositoryMock.Object,
+            null!,
+            this.converterFactoryMock.Object,
+            this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
+            this.metricsServiceMock.Object,
+            this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("unitOfWork");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when converterFactory is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenConverterFactoryIsNull_ThrowsArgumentNullException()
+    {
+        // Act
+        var act = () => new ConvertMarkdownToHtmlCommandHandler(
+            this.jobRepositoryMock.Object,
+            this.unitOfWorkMock.Object,
+            null!,
+            this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
+            this.metricsServiceMock.Object,
+            this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("converterFactory");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when currentUserService is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenCurrentUserServiceIsNull_ThrowsArgumentNullException()
+    {
+        // Act
+        var act = () => new ConvertMarkdownToHtmlCommandHandler(
+            this.jobRepositoryMock.Object,
+            this.unitOfWorkMock.Object,
+            this.converterFactoryMock.Object,
+            null!,
+            this.webhookServiceMock.Object,
+            this.metricsServiceMock.Object,
+            this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("currentUserService");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when webhookService is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenWebhookServiceIsNull_ThrowsArgumentNullException()
+    {
+        // Act
+        var act = () => new ConvertMarkdownToHtmlCommandHandler(
+            this.jobRepositoryMock.Object,
+            this.unitOfWorkMock.Object,
+            this.converterFactoryMock.Object,
+            this.currentUserServiceMock.Object,
+            null!,
+            this.metricsServiceMock.Object,
+            this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("webhookService");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when metricsService is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenMetricsServiceIsNull_ThrowsArgumentNullException()
+    {
+        // Act
+        var act = () => new ConvertMarkdownToHtmlCommandHandler(
+            this.jobRepositoryMock.Object,
+            this.unitOfWorkMock.Object,
+            this.converterFactoryMock.Object,
+            this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
+            null!,
+            this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("metricsService");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when logger is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenLoggerIsNull_ThrowsArgumentNullException()
+    {
+        // Act
+        var act = () => new ConvertMarkdownToHtmlCommandHandler(
+            this.jobRepositoryMock.Object,
+            this.unitOfWorkMock.Object,
+            this.converterFactoryMock.Object,
+            this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
+            this.metricsServiceMock.Object,
+            null!);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("logger");
+    }
+}
