@@ -209,6 +209,7 @@ Contains:
 - `POST /api/v1/convert/image` - Convert image between formats (202 Accepted)
 - `POST /api/v1/convert/pdf/merge` - Merge multiple PDFs into one (202 Accepted)
 - `POST /api/v1/convert/pdf/split` - Split PDF into multiple files (202 Accepted)
+- `POST /api/v1/convert/batch` - Batch convert multiple files in one request (200 OK)
 - `GET /api/v1/convert/{jobId}` - Get conversion job status (200 OK / 404 Not Found)
 - `GET /api/v1/convert/{jobId}/download` - Download converted file (200 OK / 404 Not Found)
 - `GET /api/v1/convert/history` - Get user's conversion history (200 OK, paginated)
@@ -374,6 +375,59 @@ Combine or separate PDF documents using PdfSharpCore.
 - Accepts single base64-encoded PDF
 - Options: `PageRanges` (e.g., "1-3", "5") or `SplitIntoSinglePages`
 - Returns ZIP file containing split PDFs
+
+### Batch Conversions
+
+Process multiple conversion requests in a single API call.
+
+**Endpoint:** `POST /api/v1/convert/batch`
+
+**Request:**
+```json
+{
+  "items": [
+    {
+      "type": "html-to-pdf",
+      "htmlContent": "<html>...</html>",
+      "fileName": "doc1.html",
+      "options": { "pageSize": "A4" }
+    },
+    {
+      "type": "markdown-to-pdf",
+      "markdown": "# Title",
+      "fileName": "doc2.md"
+    },
+    {
+      "type": "image",
+      "imageData": "base64...",
+      "sourceFormat": "png",
+      "targetFormat": "jpeg"
+    }
+  ],
+  "webhookUrl": "https://example.com/webhook"
+}
+```
+
+**Supported types:** `html-to-pdf`, `markdown-to-pdf`, `markdown-to-html`, `image`
+
+**Response (200 OK):**
+```json
+{
+  "totalItems": 3,
+  "successCount": 2,
+  "failureCount": 1,
+  "results": [
+    { "index": 0, "success": true, "job": { ... } },
+    { "index": 1, "success": true, "job": { ... } },
+    { "index": 2, "success": false, "errorCode": "...", "errorMessage": "..." }
+  ]
+}
+```
+
+**Limits:**
+- Maximum batch size: 20 items
+- Each item is processed sequentially
+- Partial success/failure is supported
 
 ---
 

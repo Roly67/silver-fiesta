@@ -110,6 +110,20 @@ Comprehensive logging with Serilog, Swagger documentation, and zero-warning buil
 
 </td>
 </tr>
+<tr>
+<td width="50%">
+
+### 📦 Batch Conversions
+Process up to 20 conversion requests in a single API call with partial success support and per-item error reporting.
+
+</td>
+<td width="50%">
+
+### 🔗 PDF Operations
+Merge multiple PDFs, split by page ranges, add watermarks, and protect with passwords using PdfSharpCore.
+
+</td>
+</tr>
 </table>
 
 <br />
@@ -320,6 +334,11 @@ X-API-Key: your-api-key-here
 <td><code>POST</code></td>
 <td><code>/api/v1/convert/pdf/split</code></td>
 <td>Split PDF into multiple files</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/convert/batch</code></td>
+<td>Batch convert multiple files</td>
 </tr>
 <tr>
 <td><code>GET</code></td>
@@ -602,6 +621,69 @@ Content-Type: application/json
 | `imageWidth` | Target width in pixels (maintains aspect ratio) |
 | `imageHeight` | Target height in pixels (maintains aspect ratio) |
 | `imageQuality` | Quality 1-100 (for JPEG/WebP) |
+
+</details>
+
+<details>
+<summary><strong>Batch Conversion</strong></summary>
+
+Convert multiple files in a single request (max 20 items):
+
+```json
+POST /api/v1/convert/batch
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "type": "html-to-pdf",
+      "htmlContent": "<html><body>Document 1</body></html>",
+      "fileName": "doc1.html"
+    },
+    {
+      "type": "markdown-to-pdf",
+      "markdown": "# Document 2",
+      "fileName": "doc2.md"
+    },
+    {
+      "type": "image",
+      "imageData": "base64-encoded-data",
+      "sourceFormat": "png",
+      "targetFormat": "jpeg"
+    }
+  ],
+  "webhookUrl": "https://example.com/webhook"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "totalItems": 3,
+  "successCount": 3,
+  "failureCount": 0,
+  "results": [
+    {
+      "index": 0,
+      "success": true,
+      "job": { "id": "...", "status": "Completed", ... }
+    },
+    {
+      "index": 1,
+      "success": true,
+      "job": { "id": "...", "status": "Completed", ... }
+    },
+    {
+      "index": 2,
+      "success": true,
+      "job": { "id": "...", "status": "Completed", ... }
+    }
+  ]
+}
+```
+
+**Supported types:** `html-to-pdf`, `markdown-to-pdf`, `markdown-to-html`, `image`
 
 </details>
 
