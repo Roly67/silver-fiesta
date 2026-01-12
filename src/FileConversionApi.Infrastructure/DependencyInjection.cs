@@ -5,6 +5,7 @@
 using FileConversionApi.Application.Interfaces;
 using FileConversionApi.Infrastructure.Converters;
 using FileConversionApi.Infrastructure.HealthChecks;
+using FileConversionApi.Infrastructure.Metrics;
 using FileConversionApi.Infrastructure.Options;
 using FileConversionApi.Infrastructure.Persistence;
 using FileConversionApi.Infrastructure.Persistence.Repositories;
@@ -41,6 +42,7 @@ public static class DependencyInjection
         services.Configure<WebhookSettings>(configuration.GetSection(WebhookSettings.SectionName));
         services.Configure<JobCleanupSettings>(configuration.GetSection(JobCleanupSettings.SectionName));
         services.Configure<HealthCheckSettings>(configuration.GetSection(HealthCheckSettings.SectionName));
+        services.Configure<MetricsSettings>(configuration.GetSection(MetricsSettings.SectionName));
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -52,6 +54,7 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddHttpClient<IWebhookService, WebhookService>();
         services.AddHostedService<JobCleanupService>();
+        services.AddSingleton<IMetricsService, PrometheusMetricsService>();
 
         // Converters
         services.AddSingleton<HtmlToPdfConverter>();

@@ -23,6 +23,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
+using Prometheus;
+
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -226,7 +228,13 @@ try
     app.UseRateLimiter();
     app.UseAuthorization();
 
+    // Prometheus HTTP metrics middleware
+    app.UseHttpMetrics();
+
     app.MapControllers();
+
+    // Prometheus metrics endpoint
+    app.MapMetrics();
 
     // Health check endpoints
     app.MapHealthChecks("/health", new HealthCheckOptions

@@ -43,6 +43,7 @@ FileConversionApi/
 - JWT Bearer Authentication
 - ASP.NET Core Rate Limiting (built-in .NET 7+ middleware)
 - Serilog for logging (NOT Microsoft.Extensions.Logging config)
+- prometheus-net for Prometheus metrics
 - Sentry for error tracking
 - Swagger/OpenAPI documentation
 - StyleCop.Analyzers for code style
@@ -980,6 +981,206 @@ Unit tests should verify:
 
 ---
 
+## Prometheus Metrics
+
+Expose application metrics in Prometheus format for monitoring dashboards and alerting.
+
+### Strategy
+
+Use the `prometheus-net.AspNetCore` library to expose a `/metrics` endpoint with standard and custom metrics.
+
+### Metrics to Expose
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `http_requests_total` | Counter | Total HTTP requests by method, endpoint, status |
+| `http_request_duration_seconds` | Histogram | Request duration distribution |
+| `conversion_jobs_total` | Counter | Total conversion jobs by format and status |
+| `conversion_job_duration_seconds` | Histogram | Conversion duration by format |
+| `conversion_jobs_active` | Gauge | Currently processing jobs |
+| `database_connections_active` | Gauge | Active database connections |
+
+### Endpoint
+
+```
+GET /metrics
+```
+
+Returns Prometheus text format:
+
+```
+# HELP http_requests_total Total number of HTTP requests
+# TYPE http_requests_total counter
+http_requests_total{method="POST",endpoint="/api/v1/convert/html-to-pdf",status="202"} 150
+http_requests_total{method="GET",endpoint="/api/v1/convert/{jobId}",status="200"} 450
+
+# HELP conversion_jobs_total Total conversion jobs processed
+# TYPE conversion_jobs_total counter
+conversion_jobs_total{source_format="html",target_format="pdf",status="completed"} 145
+conversion_jobs_total{source_format="markdown",target_format="pdf",status="completed"} 89
+conversion_jobs_total{source_format="html",target_format="pdf",status="failed"} 5
+
+# HELP conversion_job_duration_seconds Conversion job duration in seconds
+# TYPE conversion_job_duration_seconds histogram
+conversion_job_duration_seconds_bucket{source_format="html",target_format="pdf",le="1"} 50
+conversion_job_duration_seconds_bucket{source_format="html",target_format="pdf",le="5"} 120
+conversion_job_duration_seconds_bucket{source_format="html",target_format="pdf",le="10"} 145
+conversion_job_duration_seconds_bucket{source_format="html",target_format="pdf",le="+Inf"} 150
+```
+
+### Implementation
+
+#### 1. Install Package
+
+```bash
+dotnet add src/FileConversionApi.Api package prometheus-net.AspNetCore
+```
+
+#### 2. Create Custom Metrics Service
+
+```csharp
+// Infrastructure/Metrics/MetricsService.cs
+public interface IMetricsService
+{
+    void RecordConversionStarted(string sourceFormat, string targetFormat);
+    void RecordConversionCompleted(string sourceFormat, string targetFormat, double durationSeconds);
+    void RecordConversionFailed(string sourceFormat, string targetFormat);
+}
+
+public class PrometheusMetricsService : IMetricsService
+{
+    private static readonly Counter ConversionJobsTotal = Metrics.CreateCounter(
+        "conversion_jobs_total",
+        "Total conversion jobs processed",
+        new CounterConfiguration
+        {
+            LabelNames = new[] { "source_format", "target_format", "status" }
+        });
+
+    private static readonly Histogram ConversionDuration = Metrics.CreateHistogram(
+        "conversion_job_duration_seconds",
+        "Conversion job duration in seconds",
+        new HistogramConfiguration
+        {
+            LabelNames = new[] { "source_format", "target_format" },
+            Buckets = new[] { 0.5, 1, 2, 5, 10, 30, 60 }
+        });
+
+    private static readonly Gauge ActiveJobs = Metrics.CreateGauge(
+        "conversion_jobs_active",
+        "Currently processing conversion jobs");
+
+    public void RecordConversionStarted(string sourceFormat, string targetFormat)
+    {
+        ActiveJobs.Inc();
+    }
+
+    public void RecordConversionCompleted(string sourceFormat, string targetFormat, double durationSeconds)
+    {
+        ActiveJobs.Dec();
+        ConversionJobsTotal.WithLabels(sourceFormat, targetFormat, "completed").Inc();
+        ConversionDuration.WithLabels(sourceFormat, targetFormat).Observe(durationSeconds);
+    }
+
+    public void RecordConversionFailed(string sourceFormat, string targetFormat)
+    {
+        ActiveJobs.Dec();
+        ConversionJobsTotal.WithLabels(sourceFormat, targetFormat, "failed").Inc();
+    }
+}
+```
+
+#### 3. Register Metrics in Program.cs
+
+```csharp
+// Program.cs
+using Prometheus;
+
+// Add metrics service
+builder.Services.AddSingleton<IMetricsService, PrometheusMetricsService>();
+
+// Add HTTP metrics middleware (after app.Build())
+app.UseHttpMetrics(options =>
+{
+    options.AddCustomLabel("endpoint", context => context.Request.Path);
+});
+
+// Map metrics endpoint (no auth required for scraping)
+app.MapMetrics();
+```
+
+#### 4. Instrument Command Handlers
+
+```csharp
+// Application/Commands/Conversion/ConvertHtmlToPdfCommandHandler.cs
+public async Task<Result<ConversionJobDto>> Handle(
+    ConvertHtmlToPdfCommand request,
+    CancellationToken cancellationToken)
+{
+    var stopwatch = Stopwatch.StartNew();
+    this.metricsService.RecordConversionStarted("html", "pdf");
+
+    try
+    {
+        // ... conversion logic ...
+
+        stopwatch.Stop();
+        this.metricsService.RecordConversionCompleted("html", "pdf", stopwatch.Elapsed.TotalSeconds);
+        return result;
+    }
+    catch (Exception)
+    {
+        this.metricsService.RecordConversionFailed("html", "pdf");
+        throw;
+    }
+}
+```
+
+### Configuration
+
+```json
+{
+  "Metrics": {
+    "Enabled": true,
+    "Endpoint": "/metrics",
+    "IncludeHttpMetrics": true,
+    "IncludeProcessMetrics": true
+  }
+}
+```
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `Application/Interfaces/IMetricsService.cs` | Create metrics interface |
+| `Infrastructure/Metrics/PrometheusMetricsService.cs` | Create Prometheus implementation |
+| `Infrastructure/Options/MetricsSettings.cs` | Create settings class |
+| `Api/Program.cs` | Register metrics middleware and endpoint |
+| `Infrastructure/DependencyInjection.cs` | Register metrics service |
+| `Application/Commands/Conversion/*Handler.cs` | Add metrics instrumentation |
+| `Api/FileConversionApi.Api.csproj` | Add prometheus-net.AspNetCore package |
+| `appsettings.json` | Add Metrics configuration section |
+
+### Testing
+
+Unit tests should verify:
+- MetricsService correctly increments counters
+- MetricsService correctly records histograms
+- ActiveJobs gauge increments on start and decrements on complete/fail
+- Metrics endpoint returns 200 OK
+- Metrics output is in valid Prometheus format
+
+### Grafana Dashboard
+
+Example queries for Grafana:
+- Request rate: `rate(http_requests_total[5m])`
+- Error rate: `rate(http_requests_total{status=~"5.."}[5m])`
+- Conversion success rate: `rate(conversion_jobs_total{status="completed"}[5m])`
+- P95 conversion duration: `histogram_quantile(0.95, rate(conversion_job_duration_seconds_bucket[5m]))`
+
+---
+
 ## Error Handling
 
 ### Use Result Pattern (NOT exceptions for business logic)
@@ -1150,9 +1351,10 @@ The task is COMPLETE when ALL of the following are true:
 14. ✅ Rate limiting implemented with per-user and per-endpoint policies
 15. ✅ Job cleanup service auto-deletes expired jobs
 16. ✅ Health checks report detailed component status (DB, Chromium, disk)
-17. ✅ Unit tests exist with 80%+ coverage
-18. ✅ docker-compose.yml exists and works
-19. ✅ README.md documents how to run the project
+17. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
+18. ✅ Unit tests exist with 80%+ coverage
+19. ✅ docker-compose.yml exists and works
+20. ✅ README.md documents how to run the project
 
 ---
 
@@ -1172,4 +1374,4 @@ When ALL completion criteria are met, output:
 
 ---
 
-**Current Status:** All features implemented. Health check improvements complete.
+**Current Status:** Implementing Prometheus metrics feature.
