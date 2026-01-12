@@ -60,6 +60,7 @@ public static class DependencyInjection
         services.AddSingleton<HtmlToPdfConverter>();
         services.AddSingleton<IFileConverter>(sp => sp.GetRequiredService<HtmlToPdfConverter>());
         services.AddSingleton<IFileConverter, MarkdownToPdfConverter>();
+        services.AddSingleton<IFileConverter, MarkdownToHtmlConverter>();
         services.AddSingleton<IConverterFactory, ConverterFactory>();
 
         // Health Checks

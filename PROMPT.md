@@ -203,6 +203,7 @@ Contains:
 ### Conversions
 - `POST /api/v1/convert/html-to-pdf` - Convert HTML to PDF (202 Accepted)
 - `POST /api/v1/convert/markdown-to-pdf` - Convert Markdown to PDF (202 Accepted)
+- `POST /api/v1/convert/markdown-to-html` - Convert Markdown to HTML (202 Accepted)
 - `GET /api/v1/convert/{jobId}` - Get conversion job status (200 OK / 404 Not Found)
 - `GET /api/v1/convert/{jobId}/download` - Download converted file (200 OK / 404 Not Found)
 - `GET /api/v1/convert/history` - Get user's conversion history (200 OK, paginated)
@@ -266,6 +267,22 @@ The Markdown to PDF converter reuses the existing HTML to PDF infrastructure:
 - Code blocks with monospace font and background
 - Tables with borders and alternating row colors
 - Blockquotes with left border styling
+
+### Markdown to HTML Converter
+
+The Markdown to HTML converter provides standalone HTML output with embedded styling:
+
+1. **Parse Markdown** - Use Markdig library to convert Markdown to HTML
+2. **Apply Styling** - Wrap HTML in a complete document with embedded CSS
+3. **Return HTML** - Return UTF-8 encoded HTML bytes
+
+**Output Structure:**
+- Complete HTML5 document with DOCTYPE
+- Embedded CSS for GitHub-flavored styling
+- Responsive viewport meta tag
+- Article wrapper with `markdown-body` class
+
+**Reuses same styling as Markdown to PDF** for consistency across output formats.
 
 ---
 
@@ -1346,15 +1363,16 @@ The task is COMPLETE when ALL of the following are true:
 9. ✅ All API endpoints implemented with Swagger docs
 10. ✅ HTML to PDF conversion works with PuppeteerSharp
 11. ✅ Markdown to PDF conversion works with Markdig + PuppeteerSharp
-12. ✅ Webhook notifications work for completed/failed jobs
-13. ✅ JWT + API Key authentication functional
-14. ✅ Rate limiting implemented with per-user and per-endpoint policies
-15. ✅ Job cleanup service auto-deletes expired jobs
-16. ✅ Health checks report detailed component status (DB, Chromium, disk)
-17. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
-18. ✅ Unit tests exist with 80%+ coverage
-19. ✅ docker-compose.yml exists and works
-20. ✅ README.md documents how to run the project
+12. ✅ Markdown to HTML conversion works with Markdig
+13. ✅ Webhook notifications work for completed/failed jobs
+14. ✅ JWT + API Key authentication functional
+15. ✅ Rate limiting implemented with per-user and per-endpoint policies
+16. ✅ Job cleanup service auto-deletes expired jobs
+17. ✅ Health checks report detailed component status (DB, Chromium, disk)
+18. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
+19. ✅ Unit tests exist with 80%+ coverage
+20. ✅ docker-compose.yml exists and works
+21. ✅ README.md documents how to run the project
 
 ---
 
