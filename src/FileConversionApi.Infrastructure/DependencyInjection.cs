@@ -61,6 +61,15 @@ public static class DependencyInjection
         services.AddSingleton<IFileConverter>(sp => sp.GetRequiredService<HtmlToPdfConverter>());
         services.AddSingleton<IFileConverter, MarkdownToPdfConverter>();
         services.AddSingleton<IFileConverter, MarkdownToHtmlConverter>();
+
+        // Image converters
+        services.AddSingleton<IFileConverter, PngToJpegConverter>();
+        services.AddSingleton<IFileConverter, JpegToPngConverter>();
+        services.AddSingleton<IFileConverter, PngToWebpConverter>();
+        services.AddSingleton<IFileConverter, JpegToWebpConverter>();
+        services.AddSingleton<IFileConverter, WebpToPngConverter>();
+        services.AddSingleton<IFileConverter, WebpToJpegConverter>();
+
         services.AddSingleton<IConverterFactory, ConverterFactory>();
 
         // Health Checks
