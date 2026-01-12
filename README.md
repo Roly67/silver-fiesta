@@ -71,6 +71,12 @@ Built-in rate limiting with per-user and per-endpoint policies. Protects against
 <tr>
 <td width="50%">
 
+### 🧹 Auto-Cleanup
+Background service automatically deletes expired jobs. Configurable retention periods for completed and failed jobs prevent database bloat.
+
+</td>
+<td width="50%">
+
 ### 🐳 Multi-Arch Docker
 Production-ready containers for both AMD64 and ARM64 architectures, available from GitHub Container Registry.
 
@@ -506,6 +512,33 @@ tests/
 | `auth` | 10 requests | 15 min | Authentication endpoints |
 
 > **Note:** Rate limits are applied per-user for authenticated requests and per-IP for anonymous requests. When rate limited, the API returns HTTP 429 with a `Retry-After` header.
+
+</details>
+
+<details>
+<summary><strong>Job Cleanup Settings</strong></summary>
+
+```json
+{
+  "JobCleanup": {
+    "Enabled": true,
+    "RunIntervalMinutes": 60,
+    "CompletedJobRetentionDays": 7,
+    "FailedJobRetentionDays": 30,
+    "BatchSize": 100
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Enabled` | true | Enable/disable the cleanup service |
+| `RunIntervalMinutes` | 60 | How often to run cleanup |
+| `CompletedJobRetentionDays` | 7 | Days to keep completed jobs |
+| `FailedJobRetentionDays` | 30 | Days to keep failed jobs (longer for debugging) |
+| `BatchSize` | 100 | Max jobs to delete per run |
+
+> **Note:** The cleanup service runs as a background hosted service. Failed jobs are retained longer to allow for debugging issues.
 
 </details>
 

@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.Configure<PuppeteerSettings>(configuration.GetSection(PuppeteerSettings.SectionName));
         services.Configure<WebhookSettings>(configuration.GetSection(WebhookSettings.SectionName));
+        services.Configure<JobCleanupSettings>(configuration.GetSection(JobCleanupSettings.SectionName));
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -47,6 +48,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddHttpClient<IWebhookService, WebhookService>();
+        services.AddHostedService<JobCleanupService>();
 
         // Converters
         services.AddSingleton<HtmlToPdfConverter>();
