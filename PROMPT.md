@@ -39,7 +39,7 @@ FileConversionApi/
 - PuppeteerSharp for HTML to PDF conversion
 - Markdig for Markdown parsing
 - SixLabors.ImageSharp for image format conversions
-- PdfSharpCore for PDF watermarking
+- PdfSharpCore for PDF manipulation (watermarking, password protection, merge/split)
 - MediatR for CQRS pattern
 - FluentValidation for request validation
 - JWT Bearer Authentication
@@ -207,6 +207,8 @@ Contains:
 - `POST /api/v1/convert/markdown-to-pdf` - Convert Markdown to PDF (202 Accepted)
 - `POST /api/v1/convert/markdown-to-html` - Convert Markdown to HTML (202 Accepted)
 - `POST /api/v1/convert/image` - Convert image between formats (202 Accepted)
+- `POST /api/v1/convert/pdf/merge` - Merge multiple PDFs into one (202 Accepted)
+- `POST /api/v1/convert/pdf/split` - Split PDF into multiple files (202 Accepted)
 - `GET /api/v1/convert/{jobId}` - Get conversion job status (200 OK / 404 Not Found)
 - `GET /api/v1/convert/{jobId}/download` - Download converted file (200 OK / 404 Not Found)
 - `GET /api/v1/convert/history` - Get user's conversion history (200 OK, paginated)
@@ -326,6 +328,52 @@ POST /api/v1/convert/image
   }
 }
 ```
+
+### PDF Watermarking
+
+Add text watermarks to PDF output by including `watermark` options in any PDF conversion request.
+
+**Watermark Options:**
+- `Text` - Watermark text (required)
+- `FontSize` - Font size in points (default: 48)
+- `FontFamily` - Font family name (default: "Helvetica")
+- `Color` - Hex color (default: "#808080")
+- `Opacity` - 0.0 to 1.0 (default: 0.3)
+- `Rotation` - Angle in degrees (default: -45)
+- `Position` - Center, TopLeft, TopCenter, TopRight, BottomLeft, BottomCenter, BottomRight, Tile
+- `AllPages` - Apply to all pages (default: true)
+- `PageNumbers` - Specific pages if AllPages is false
+
+**Implementation:** Uses PdfSharpCore to overlay text on PDF pages.
+
+### PDF Password Protection
+
+Encrypt PDF output with passwords and permissions using PdfSharpCore.
+
+**Password Protection Options:**
+- `UserPassword` - Password to open/view the PDF (required)
+- `OwnerPassword` - Password for full access (defaults to UserPassword)
+- `AllowPrinting` - Allow printing (default: true)
+- `AllowCopyingContent` - Allow copying text/images (default: true)
+- `AllowModifying` - Allow document modification (default: false)
+- `AllowAnnotations` - Allow adding annotations (default: false)
+
+**Implementation:** Applied after watermarking in the conversion pipeline.
+
+### PDF Merge and Split
+
+Combine or separate PDF documents using PdfSharpCore.
+
+**Merge:**
+- `POST /api/v1/convert/pdf/merge`
+- Accepts array of base64-encoded PDFs
+- Returns single merged PDF
+
+**Split:**
+- `POST /api/v1/convert/pdf/split`
+- Accepts single base64-encoded PDF
+- Options: `PageRanges` (e.g., "1-3", "5") or `SplitIntoSinglePages`
+- Returns ZIP file containing split PDFs
 
 ---
 
@@ -1410,15 +1458,16 @@ The task is COMPLETE when ALL of the following are true:
 13. ✅ Image format conversions work with ImageSharp (PNG, JPEG, WebP)
 14. ✅ PDF watermarking works with PdfSharpCore
 15. ✅ PDF password protection works with PdfSharpCore
-16. ✅ Webhook notifications work for completed/failed jobs
-17. ✅ JWT + API Key authentication functional
-18. ✅ Rate limiting implemented with per-user and per-endpoint policies
-19. ✅ Job cleanup service auto-deletes expired jobs
-20. ✅ Health checks report detailed component status (DB, Chromium, disk)
-21. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
-22. ✅ Unit tests exist with 80%+ coverage
-23. ✅ docker-compose.yml exists and works
-24. ✅ README.md documents how to run the project
+16. ✅ PDF merge/split works with PdfSharpCore
+17. ✅ Webhook notifications work for completed/failed jobs
+18. ✅ JWT + API Key authentication functional
+19. ✅ Rate limiting implemented with per-user and per-endpoint policies
+20. ✅ Job cleanup service auto-deletes expired jobs
+21. ✅ Health checks report detailed component status (DB, Chromium, disk)
+22. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
+23. ✅ Unit tests exist with 80%+ coverage
+24. ✅ docker-compose.yml exists and works
+25. ✅ README.md documents how to run the project
 
 ---
 
