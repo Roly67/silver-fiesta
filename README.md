@@ -54,6 +54,20 @@ Monitor conversion progress, access history, and download results with comprehen
 
 </td>
 </tr>
+<tr>
+<td width="50%">
+
+### 🔔 Webhook Notifications
+Receive HTTP callbacks when conversion jobs complete or fail. Configure per-request webhook URLs for real-time integration.
+
+</td>
+<td width="50%">
+
+### 🐳 Multi-Arch Docker
+Production-ready containers for both AMD64 and ARM64 architectures, available from GitHub Container Registry.
+
+</td>
+</tr>
 </table>
 
 <br />
@@ -273,6 +287,7 @@ Content-Type: application/json
 {
   "htmlContent": "<html><body><h1>Hello World</h1></body></html>",
   "fileName": "document.pdf",
+  "webhookUrl": "https://example.com/webhooks/conversion",
   "options": {
     "pageSize": "A4",
     "landscape": false,
@@ -307,6 +322,7 @@ Content-Type: application/json
 {
   "markdown": "# Hello World\n\nThis is **bold** and *italic* text.",
   "fileName": "document.pdf",
+  "webhookUrl": "https://example.com/webhooks/conversion",
   "options": {
     "pageSize": "A4",
     "landscape": false,
@@ -426,6 +442,23 @@ tests/
 ```
 
 > **Note:** When `ExecutablePath` is `null`, PuppeteerSharp automatically downloads a compatible Chromium version. This is the recommended approach for Docker deployments.
+
+</details>
+
+<details>
+<summary><strong>Webhook Settings</strong></summary>
+
+```json
+{
+  "WebhookSettings": {
+    "TimeoutSeconds": 30,
+    "MaxRetries": 3,
+    "RetryDelayMilliseconds": 1000
+  }
+}
+```
+
+> **Note:** Webhook notifications are sent when conversion jobs complete or fail. Failed webhook calls are retried automatically.
 
 </details>
 

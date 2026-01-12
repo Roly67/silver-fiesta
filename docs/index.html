@@ -367,7 +367,7 @@
     <section class="hero">
         <div class="container">
             <h2>File Conversion API</h2>
-            <p>Production-ready .NET 10 REST API for converting HTML to PDF with enterprise-grade authentication and monitoring.</p>
+            <p>Production-ready .NET 10 REST API for converting HTML and Markdown to PDF with enterprise-grade authentication, webhooks, and monitoring.</p>
 
             <div class="badges">
                 <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat&logo=dotnet" alt=".NET 10">
@@ -401,8 +401,8 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">&#128196;</div>
-                    <h4>HTML to PDF</h4>
-                    <p>High-quality PDF generation using PuppeteerSharp with customizable options.</p>
+                    <h4>HTML & Markdown to PDF</h4>
+                    <p>High-quality PDF generation from HTML or Markdown using PuppeteerSharp with customizable options.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">&#9889;</div>
@@ -422,7 +422,12 @@
                 <div class="feature-card">
                     <div class="feature-icon">&#128230;</div>
                     <h4>Docker Ready</h4>
-                    <p>Multi-stage Dockerfile optimized for production deployments.</p>
+                    <p>Multi-arch containers (AMD64/ARM64) optimized for production deployments.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128276;</div>
+                    <h4>Webhook Notifications</h4>
+                    <p>HTTP callbacks when jobs complete or fail with configurable retries.</p>
                 </div>
             </div>
         </div>
@@ -471,15 +476,22 @@
                 </div>
                 <div class="endpoint">
                     <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/markdown-to-pdf</span>
+                        <span class="endpoint-desc">Convert Markdown to PDF</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
                         <span class="method method-get">GET</span>
-                        <span class="endpoint-path">/api/v1/convert/status/{jobId}</span>
+                        <span class="endpoint-path">/api/v1/convert/{jobId}</span>
                         <span class="endpoint-desc">Get conversion job status</span>
                     </div>
                 </div>
                 <div class="endpoint">
                     <div class="endpoint-header">
                         <span class="method method-get">GET</span>
-                        <span class="endpoint-path">/api/v1/convert/download/{jobId}</span>
+                        <span class="endpoint-path">/api/v1/convert/{jobId}/download</span>
                         <span class="endpoint-desc">Download converted file</span>
                     </div>
                 </div>
@@ -535,11 +547,11 @@ curl -X POST http://localhost:5000/api/v1/auth/login \
   -H <span class="code-string">"Content-Type: application/json"</span> \
   -d <span class="code-string">'{"email": "user@example.com", "password": "SecurePass123!"}'</span>
 
-<span class="code-comment"># 3. Convert HTML to PDF</span>
+<span class="code-comment"># 3. Convert HTML to PDF (with optional webhook)</span>
 curl -X POST http://localhost:5000/api/v1/convert/html-to-pdf \
   -H <span class="code-string">"Authorization: Bearer YOUR_TOKEN"</span> \
   -H <span class="code-string">"Content-Type: application/json"</span> \
-  -d <span class="code-string">'{"htmlContent": "&lt;h1&gt;Hello World&lt;/h1&gt;", "fileName": "document.pdf"}'</span></pre>
+  -d <span class="code-string">'{"htmlContent": "&lt;h1&gt;Hello World&lt;/h1&gt;", "fileName": "document.pdf", "webhookUrl": "https://example.com/webhook"}'</span></pre>
                 </div>
             </div>
         </div>
