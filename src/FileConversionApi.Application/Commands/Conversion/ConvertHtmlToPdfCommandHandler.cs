@@ -2,6 +2,7 @@
 // FileConversionApi
 // </copyright>
 
+using System.Diagnostics;
 using System.Text;
 
 using FileConversionApi.Application.DTOs;
@@ -9,7 +10,9 @@ using FileConversionApi.Application.Interfaces;
 using FileConversionApi.Domain.Entities;
 using FileConversionApi.Domain.Errors;
 using FileConversionApi.Domain.Primitives;
+
 using MediatR;
+
 using Microsoft.Extensions.Logging;
 
 namespace FileConversionApi.Application.Commands.Conversion;
@@ -24,6 +27,7 @@ public class ConvertHtmlToPdfCommandHandler : IRequestHandler<ConvertHtmlToPdfCo
     private readonly IConverterFactory converterFactory;
     private readonly ICurrentUserService currentUserService;
     private readonly IWebhookService webhookService;
+    private readonly IMetricsService metricsService;
     private readonly ILogger<ConvertHtmlToPdfCommandHandler> logger;
 
     /// <summary>
@@ -34,6 +38,7 @@ public class ConvertHtmlToPdfCommandHandler : IRequestHandler<ConvertHtmlToPdfCo
     /// <param name="converterFactory">The converter factory.</param>
     /// <param name="currentUserService">The current user service.</param>
     /// <param name="webhookService">The webhook service.</param>
+    /// <param name="metricsService">The metrics service.</param>
     /// <param name="logger">The logger.</param>
     public ConvertHtmlToPdfCommandHandler(
         IConversionJobRepository jobRepository,
@@ -41,6 +46,7 @@ public class ConvertHtmlToPdfCommandHandler : IRequestHandler<ConvertHtmlToPdfCo
         IConverterFactory converterFactory,
         ICurrentUserService currentUserService,
         IWebhookService webhookService,
+        IMetricsService metricsService,
         ILogger<ConvertHtmlToPdfCommandHandler> logger)
     {
         this.jobRepository = jobRepository ?? throw new ArgumentNullException(nameof(jobRepository));
@@ -48,6 +54,7 @@ public class ConvertHtmlToPdfCommandHandler : IRequestHandler<ConvertHtmlToPdfCo
         this.converterFactory = converterFactory ?? throw new ArgumentNullException(nameof(converterFactory));
         this.currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         this.webhookService = webhookService ?? throw new ArgumentNullException(nameof(webhookService));
+        this.metricsService = metricsService ?? throw new ArgumentNullException(nameof(metricsService));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -82,6 +89,9 @@ public class ConvertHtmlToPdfCommandHandler : IRequestHandler<ConvertHtmlToPdfCo
         job.MarkAsProcessing();
         await this.unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+        var stopwatch = Stopwatch.StartNew();
+        this.metricsService.RecordConversionStarted("html", "pdf");
+
         try
         {
             var content = request.HtmlContent ?? request.Url ?? string.Empty;
@@ -94,6 +104,8 @@ public class ConvertHtmlToPdfCommandHandler : IRequestHandler<ConvertHtmlToPdfCo
 
             if (conversionResult.IsFailure)
             {
+                stopwatch.Stop();
+                this.metricsService.RecordConversionFailed("html", "pdf");
                 job.MarkAsFailed(conversionResult.Error.Message);
                 await this.unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
                 await this.webhookService.SendJobCompletedAsync(job, cancellationToken).ConfigureAwait(false);
@@ -105,6 +117,9 @@ public class ConvertHtmlToPdfCommandHandler : IRequestHandler<ConvertHtmlToPdfCo
             await this.unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await this.webhookService.SendJobCompletedAsync(job, cancellationToken).ConfigureAwait(false);
 
+            stopwatch.Stop();
+            this.metricsService.RecordConversionCompleted("html", "pdf", stopwatch.Elapsed.TotalSeconds);
+
             this.logger.LogInformation(
                 "Conversion job {JobId} completed successfully",
                 job.Id);
@@ -113,6 +128,8 @@ public class ConvertHtmlToPdfCommandHandler : IRequestHandler<ConvertHtmlToPdfCo
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
+            this.metricsService.RecordConversionFailed("html", "pdf");
             this.logger.LogError(ex, "Conversion job {JobId} failed with exception", job.Id);
             job.MarkAsFailed(ex.Message);
             await this.unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
