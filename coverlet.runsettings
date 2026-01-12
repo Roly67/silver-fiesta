@@ -5,8 +5,8 @@
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
           <Format>cobertura</Format>
-          <Exclude>[*.Tests]*,[*]*.Migrations.*,[*]FileConversionApi.Infrastructure.Persistence.*,[*]FileConversionApi.Infrastructure.Converters.HtmlToPdfConverter</Exclude>
-          <ExcludeByFile>**/Migrations/*.cs,**/Persistence/**/*.cs,**/HtmlToPdfConverter.cs</ExcludeByFile>
+          <Exclude>[*.Tests]*,[*]*.Migrations.*,[*]FileConversionApi.Infrastructure.DependencyInjection,[*]FileConversionApi.Application.DependencyInjection,[*]FileConversionApi.Infrastructure.Converters.HtmlToPdfConverter,[*]FileConversionApi.Infrastructure.Converters.MarkdownToPdfConverter</Exclude>
+          <ExcludeByFile>**/Migrations/*.cs,**/DependencyInjection.cs,**/HtmlToPdfConverter.cs,**/MarkdownToPdfConverter.cs</ExcludeByFile>
           <SingleHit>false</SingleHit>
           <UseSourceLink>true</UseSourceLink>
           <IncludeTestAssembly>false</IncludeTestAssembly>
