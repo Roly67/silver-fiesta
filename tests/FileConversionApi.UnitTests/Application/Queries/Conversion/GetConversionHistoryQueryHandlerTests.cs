@@ -133,7 +133,7 @@ public class GetConversionHistoryQueryHandlerTests
 
         this.currentUserServiceMock
             .Setup(x => x.UserId)
-            .Returns(null as UserId?);
+            .Returns(default(UserId?));
 
         // Act
         var result = await this.handler.Handle(query, CancellationToken.None);

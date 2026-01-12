@@ -101,7 +101,7 @@ public class LoginCommandHandlerTests
 
         this.userRepositoryMock
             .Setup(x => x.GetByEmailAsync(command.Email, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(null as User);
+            .ReturnsAsync(default(User));
 
         // Act
         var result = await this.handler.Handle(command, CancellationToken.None);

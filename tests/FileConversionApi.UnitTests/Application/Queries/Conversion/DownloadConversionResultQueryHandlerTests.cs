@@ -98,7 +98,7 @@ public class DownloadConversionResultQueryHandlerTests
 
         this.currentUserServiceMock
             .Setup(x => x.UserId)
-            .Returns(null as UserId?);
+            .Returns(default(UserId?));
 
         // Act
         var result = await this.handler.Handle(query, CancellationToken.None);
@@ -137,7 +137,7 @@ public class DownloadConversionResultQueryHandlerTests
                 It.IsAny<ConversionJobId>(),
                 It.IsAny<UserId>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(null as ConversionJob);
+            .ReturnsAsync(default(ConversionJob));
 
         // Act
         var result = await this.handler.Handle(query, CancellationToken.None);
@@ -499,7 +499,7 @@ public class DownloadConversionResultQueryHandlerTests
                 capturedJobId = jid;
                 capturedUserId = uid;
             })
-            .ReturnsAsync(null as ConversionJob);
+            .ReturnsAsync(default(ConversionJob));
 
         // Act
         await this.handler.Handle(query, CancellationToken.None);

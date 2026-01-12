@@ -124,7 +124,7 @@ public class ConvertHtmlToPdfCommandHandlerTests
 
         this.currentUserServiceMock
             .Setup(x => x.UserId)
-            .Returns(null as UserId?);
+            .Returns(default(UserId?));
 
         // Act
         var result = await this.handler.Handle(command, CancellationToken.None);
@@ -157,7 +157,7 @@ public class ConvertHtmlToPdfCommandHandlerTests
 
         this.converterFactoryMock
             .Setup(x => x.GetConverter("html", "pdf"))
-            .Returns(null as IFileConverter);
+            .Returns(default(IFileConverter));
 
         // Act
         var result = await this.handler.Handle(command, CancellationToken.None);
