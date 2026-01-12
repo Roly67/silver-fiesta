@@ -367,7 +367,7 @@
     <section class="hero">
         <div class="container">
             <h2>File Conversion API</h2>
-            <p>Production-ready .NET 10 REST API for converting HTML and Markdown to PDF with enterprise-grade authentication, webhooks, and monitoring.</p>
+            <p>Production-ready .NET 10 REST API for converting documents and images. HTML/Markdown to PDF, Markdown to HTML, and image format conversions with enterprise-grade authentication, webhooks, and monitoring.</p>
 
             <div class="badges">
                 <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat&logo=dotnet" alt=".NET 10">
@@ -401,8 +401,13 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">&#128196;</div>
-                    <h4>HTML & Markdown to PDF</h4>
-                    <p>High-quality PDF generation from HTML or Markdown using PuppeteerSharp with customizable options.</p>
+                    <h4>Document Conversion</h4>
+                    <p>HTML/Markdown to PDF, Markdown to HTML using PuppeteerSharp and Markdig with customizable options.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128247;</div>
+                    <h4>Image Conversions</h4>
+                    <p>Convert between PNG, JPEG, WebP, GIF, BMP formats with resize and quality options using ImageSharp.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">&#9889;</div>
@@ -428,6 +433,16 @@
                     <div class="feature-icon">&#128276;</div>
                     <h4>Webhook Notifications</h4>
                     <p>HTTP callbacks when jobs complete or fail with configurable retries.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128200;</div>
+                    <h4>Prometheus Metrics</h4>
+                    <p>Built-in /metrics endpoint for Grafana dashboards with conversion and HTTP request metrics.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#129657;</div>
+                    <h4>Enhanced Health Checks</h4>
+                    <p>Detailed /health endpoint reporting database, Chromium, and disk space status.</p>
                 </div>
             </div>
         </div>
@@ -483,6 +498,20 @@
                 </div>
                 <div class="endpoint">
                     <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/markdown-to-html</span>
+                        <span class="endpoint-desc">Convert Markdown to styled HTML</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/image</span>
+                        <span class="endpoint-desc">Convert image formats (PNG, JPEG, WebP)</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
                         <span class="method method-get">GET</span>
                         <span class="endpoint-path">/api/v1/convert/{jobId}</span>
                         <span class="endpoint-desc">Get conversion job status</span>
@@ -500,6 +529,24 @@
                         <span class="method method-get">GET</span>
                         <span class="endpoint-path">/api/v1/convert/history</span>
                         <span class="endpoint-desc">Get conversion history</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h4>Health & Monitoring</h4>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/health</span>
+                        <span class="endpoint-desc">Detailed health status (DB, Chromium, disk)</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/metrics</span>
+                        <span class="endpoint-desc">Prometheus metrics endpoint</span>
                     </div>
                 </div>
             </div>

@@ -30,7 +30,7 @@
 <td width="50%">
 
 ### 🔄 Document Conversion
-Convert HTML, Markdown, or URLs to pixel-perfect PDFs using PuppeteerSharp with full control over page size, margins, and rendering options.
+Convert HTML, Markdown, or URLs to PDF. Convert Markdown to HTML. Transform images between PNG, JPEG, and WebP formats with resize and quality options.
 
 </td>
 <td width="50%">
@@ -83,8 +83,22 @@ Production-ready containers for both AMD64 and ARM64 architectures, available fr
 </td>
 <td width="50%">
 
-### 📈 Production Ready
-Comprehensive logging with Serilog, health checks, Swagger documentation, and zero-warning builds with StyleCop analyzers.
+### 🖼️ Image Conversions
+Convert images between PNG, JPEG, and WebP formats using ImageSharp. Supports resize, quality settings, and maintains aspect ratio.
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 📈 Prometheus Metrics
+Built-in `/metrics` endpoint exposes conversion statistics, HTTP request metrics, and system health for Grafana dashboards.
+
+</td>
+<td width="50%">
+
+### 🩺 Enhanced Health Checks
+Detailed `/health` endpoint reports database connectivity, Chromium availability, and disk space status with degraded state detection.
 
 </td>
 </tr>
@@ -280,6 +294,16 @@ X-API-Key: your-api-key-here
 <td>Convert Markdown to PDF</td>
 </tr>
 <tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/convert/markdown-to-html</code></td>
+<td>Convert Markdown to HTML</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/convert/image</code></td>
+<td>Convert image formats (PNG, JPEG, WebP)</td>
+</tr>
+<tr>
 <td><code>GET</code></td>
 <td><code>/api/v1/convert/{id}</code></td>
 <td>Get job status</td>
@@ -363,13 +387,128 @@ Content-Type: application/json
 
 </details>
 
+<details>
+<summary><strong>Convert Markdown to HTML</strong></summary>
+
+```json
+POST /api/v1/convert/markdown-to-html
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "markdown": "# Hello World\n\nThis is **bold** and *italic* text.",
+  "fileName": "document.html",
+  "webhookUrl": "https://example.com/webhooks/conversion"
+}
+```
+
+Returns styled HTML with professional CSS including:
+- Typography and code syntax highlighting
+- Table styling and blockquotes
+- Responsive design
+
+</details>
+
+<details>
+<summary><strong>Convert Image Formats</strong></summary>
+
+```json
+POST /api/v1/convert/image
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "imageData": "base64-encoded-image-data",
+  "sourceFormat": "png",
+  "targetFormat": "jpeg",
+  "fileName": "photo.png",
+  "webhookUrl": "https://example.com/webhooks/conversion",
+  "options": {
+    "imageWidth": 800,
+    "imageHeight": 600,
+    "imageQuality": 85
+  }
+}
+```
+
+**Supported formats:** PNG, JPEG, WebP, GIF, BMP
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `imageWidth` | Target width in pixels (maintains aspect ratio) |
+| `imageHeight` | Target height in pixels (maintains aspect ratio) |
+| `imageQuality` | Quality 1-100 (for JPEG/WebP) |
+
+</details>
+
 <br />
 
-### Health Check
+### Health & Monitoring
 
+<table>
+<tr>
+<td><code>GET</code></td>
+<td><code>/health</code></td>
+<td>Detailed health status (DB, Chromium, disk)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/metrics</code></td>
+<td>Prometheus metrics endpoint</td>
+</tr>
+</table>
+
+<details>
+<summary><strong>Health Check Response</strong></summary>
+
+```json
+{
+  "status": "Healthy",
+  "totalDuration": "00:00:00.1234567",
+  "entries": {
+    "database": {
+      "status": "Healthy",
+      "description": "PostgreSQL connection successful"
+    },
+    "chromium": {
+      "status": "Healthy",
+      "description": "Chromium is available for PDF generation"
+    },
+    "disk_space": {
+      "status": "Healthy",
+      "description": "Disk space: 50.2 GB free (62.5%)"
+    }
+  }
+}
 ```
-GET /health
+
+**Status values:** `Healthy`, `Degraded`, `Unhealthy`
+
+</details>
+
+<details>
+<summary><strong>Prometheus Metrics</strong></summary>
+
+The `/metrics` endpoint exposes:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `conversion_requests_total` | Counter | Total conversion requests by format and status |
+| `conversion_duration_seconds` | Histogram | Conversion duration by format |
+| `http_requests_total` | Counter | HTTP requests by method, path, status |
+| `http_request_duration_seconds` | Histogram | HTTP request duration |
+
+**Example Prometheus scrape config:**
+```yaml
+scrape_configs:
+  - job_name: 'fileconversion-api'
+    static_configs:
+      - targets: ['localhost:5000']
+    metrics_path: '/metrics'
 ```
+
+</details>
 
 <br />
 
