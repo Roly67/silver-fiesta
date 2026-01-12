@@ -600,6 +600,138 @@ Unit tests should verify:
 
 ---
 
+## Job Cleanup/Expiry
+
+Automatically clean up old conversion jobs to prevent database bloat.
+
+### Strategy
+
+Use a background service (`IHostedService`) that periodically deletes expired jobs based on configurable retention policies.
+
+### Configuration
+
+```json
+{
+  "JobCleanup": {
+    "Enabled": true,
+    "RunIntervalMinutes": 60,
+    "CompletedJobRetentionDays": 7,
+    "FailedJobRetentionDays": 30,
+    "BatchSize": 100
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Enabled` | true | Enable/disable cleanup service |
+| `RunIntervalMinutes` | 60 | How often to run cleanup (minutes) |
+| `CompletedJobRetentionDays` | 7 | Days to keep completed jobs |
+| `FailedJobRetentionDays` | 30 | Days to keep failed jobs (longer for debugging) |
+| `BatchSize` | 100 | Max jobs to delete per run (prevents long-running transactions) |
+
+### Settings Class
+
+```csharp
+// Infrastructure/Options/JobCleanupSettings.cs
+public class JobCleanupSettings
+{
+    public const string SectionName = "JobCleanup";
+
+    public bool Enabled { get; set; } = true;
+    public int RunIntervalMinutes { get; set; } = 60;
+    public int CompletedJobRetentionDays { get; set; } = 7;
+    public int FailedJobRetentionDays { get; set; } = 30;
+    public int BatchSize { get; set; } = 100;
+}
+```
+
+### Background Service
+
+```csharp
+// Infrastructure/Services/JobCleanupService.cs
+public class JobCleanupService : BackgroundService
+{
+    private readonly IServiceScopeFactory scopeFactory;
+    private readonly IOptions<JobCleanupSettings> settings;
+    private readonly ILogger<JobCleanupService> logger;
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        if (!settings.Value.Enabled)
+        {
+            logger.LogInformation("Job cleanup service is disabled");
+            return;
+        }
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await CleanupExpiredJobsAsync(stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(settings.Value.RunIntervalMinutes), stoppingToken);
+        }
+    }
+
+    private async Task CleanupExpiredJobsAsync(CancellationToken cancellationToken)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var completedCutoff = DateTimeOffset.UtcNow.AddDays(-settings.Value.CompletedJobRetentionDays);
+        var failedCutoff = DateTimeOffset.UtcNow.AddDays(-settings.Value.FailedJobRetentionDays);
+
+        // Delete expired completed jobs
+        var completedDeleted = await dbContext.ConversionJobs
+            .Where(j => j.Status == ConversionStatus.Completed && j.CompletedAt < completedCutoff)
+            .Take(settings.Value.BatchSize)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        // Delete expired failed jobs
+        var failedDeleted = await dbContext.ConversionJobs
+            .Where(j => j.Status == ConversionStatus.Failed && j.CompletedAt < failedCutoff)
+            .Take(settings.Value.BatchSize)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        if (completedDeleted > 0 || failedDeleted > 0)
+        {
+            logger.LogInformation(
+                "Job cleanup completed: {CompletedDeleted} completed jobs, {FailedDeleted} failed jobs deleted",
+                completedDeleted,
+                failedDeleted);
+        }
+    }
+}
+```
+
+### Registration
+
+```csharp
+// Infrastructure/DependencyInjection.cs
+services.Configure<JobCleanupSettings>(configuration.GetSection(JobCleanupSettings.SectionName));
+services.AddHostedService<JobCleanupService>();
+```
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `Infrastructure/Options/JobCleanupSettings.cs` | Create settings class |
+| `Infrastructure/Services/JobCleanupService.cs` | Create background service |
+| `Infrastructure/DependencyInjection.cs` | Register settings and hosted service |
+| `appsettings.json` | Add JobCleanup configuration section |
+| `appsettings.Development.json` | Add JobCleanup with shorter retention for dev |
+
+### Testing
+
+Unit tests should verify:
+- Cleanup runs only when enabled
+- Jobs older than retention period are deleted
+- Jobs newer than retention period are retained
+- Batch size limits are respected
+- Completed and failed jobs have different retention periods
+- Service handles empty database gracefully
+
+---
+
 ## Error Handling
 
 ### Use Result Pattern (NOT exceptions for business logic)
@@ -768,9 +900,10 @@ The task is COMPLETE when ALL of the following are true:
 12. ✅ Webhook notifications work for completed/failed jobs
 13. ✅ JWT + API Key authentication functional
 14. ✅ Rate limiting implemented with per-user and per-endpoint policies
-15. ✅ Unit tests exist with 80%+ coverage
-16. ✅ docker-compose.yml exists and works
-17. ✅ README.md documents how to run the project
+15. ✅ Job cleanup service auto-deletes expired jobs
+16. ✅ Unit tests exist with 80%+ coverage
+17. ✅ docker-compose.yml exists and works
+18. ✅ README.md documents how to run the project
 
 ---
 
@@ -790,4 +923,4 @@ When ALL completion criteria are met, output:
 
 ---
 
-**Current Status:** All features implemented. Rate limiting complete.
+**Current Status:** Implementing job cleanup/expiry background service.
