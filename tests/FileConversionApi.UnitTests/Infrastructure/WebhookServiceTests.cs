@@ -19,12 +19,14 @@ namespace FileConversionApi.UnitTests.Infrastructure;
 /// <summary>
 /// Unit tests for the <see cref="WebhookService"/> class.
 /// </summary>
-public class WebhookServiceTests
+public class WebhookServiceTests : IDisposable
 {
     private readonly Mock<HttpMessageHandler> httpMessageHandlerMock;
     private readonly Mock<ILogger<WebhookService>> loggerMock;
     private readonly WebhookSettings settings;
     private readonly HttpClient httpClient;
+    private readonly List<HttpResponseMessage> responseMessages = [];
+    private bool disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WebhookServiceTests"/> class.
@@ -298,6 +300,35 @@ public class WebhookServiceTests
             .WithParameterName("logger");
     }
 
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        this.Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Disposes the test resources.
+    /// </summary>
+    /// <param name="disposing">Whether to dispose managed resources.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!this.disposed)
+        {
+            if (disposing)
+            {
+                foreach (var response in this.responseMessages)
+                {
+                    response.Dispose();
+                }
+
+                this.httpClient.Dispose();
+            }
+
+            this.disposed = true;
+        }
+    }
+
     private static ConversionJob CreateJob(string? webhookUrl)
     {
         return ConversionJob.Create(
@@ -321,6 +352,11 @@ public class WebhookServiceTests
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(statusCode));
+            .ReturnsAsync(() =>
+            {
+                var response = new HttpResponseMessage(statusCode);
+                this.responseMessages.Add(response);
+                return response;
+            });
     }
 }

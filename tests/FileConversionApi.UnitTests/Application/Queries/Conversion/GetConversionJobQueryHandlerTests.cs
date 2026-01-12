@@ -108,7 +108,7 @@ public class GetConversionJobQueryHandlerTests
                 It.IsAny<ConversionJobId>(),
                 It.IsAny<UserId>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ConversionJob?)null);
+            .ReturnsAsync(null as ConversionJob);
 
         // Act
         var result = await this.handler.Handle(query, CancellationToken.None);
@@ -132,7 +132,7 @@ public class GetConversionJobQueryHandlerTests
 
         this.currentUserServiceMock
             .Setup(x => x.UserId)
-            .Returns((UserId?)null);
+            .Returns(null as UserId?);
 
         // Act
         var result = await this.handler.Handle(query, CancellationToken.None);
@@ -250,7 +250,7 @@ public class GetConversionJobQueryHandlerTests
                 capturedJobId = jid;
                 capturedUserId = uid;
             })
-            .ReturnsAsync((ConversionJob?)null);
+            .ReturnsAsync(null as ConversionJob);
 
         // Act
         await this.handler.Handle(query, CancellationToken.None);

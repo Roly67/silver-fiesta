@@ -23,6 +23,9 @@ RUN dotnet publish src/FileConversionApi.Api/FileConversionApi.Api.csproj -c Rel
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
+# Upgrade system packages to fix security vulnerabilities
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies for Chromium (PuppeteerSharp will download Chrome)
 RUN apt-get update && apt-get install -y \
     wget \

@@ -124,7 +124,7 @@ public class ConvertMarkdownToPdfCommandHandlerTests
 
         this.currentUserServiceMock
             .Setup(x => x.UserId)
-            .Returns((UserId?)null);
+            .Returns(null as UserId?);
 
         // Act
         var result = await this.handler.Handle(command, CancellationToken.None);
@@ -157,7 +157,7 @@ public class ConvertMarkdownToPdfCommandHandlerTests
 
         this.converterFactoryMock
             .Setup(x => x.GetConverter("markdown", "pdf"))
-            .Returns((IFileConverter?)null);
+            .Returns(null as IFileConverter);
 
         // Act
         var result = await this.handler.Handle(command, CancellationToken.None);

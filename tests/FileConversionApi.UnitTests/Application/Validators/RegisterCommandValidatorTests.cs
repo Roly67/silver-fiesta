@@ -119,11 +119,8 @@ public class RegisterCommandValidatorTests
     [Fact]
     public void Validate_WhenEmailExceeds256Characters_ShouldHaveValidationError()
     {
-        // Arrange - create email that exceeds 256 characters total
-        var localPart = new string('a', 200);
-        var domain = new string('b', 50) + ".com"; // 54 characters
-        var longEmail = localPart + "@" + domain; // 255 total, plus need to exceed 256
-        longEmail = new string('a', 250) + "@" + new string('b', 10) + ".com"; // 265 characters
+        // Arrange - create email that exceeds 256 characters (265 total)
+        var longEmail = new string('a', 250) + "@" + new string('b', 10) + ".com";
         var command = new RegisterCommand(longEmail, "Password1");
 
         // Act
