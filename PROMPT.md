@@ -1409,15 +1409,16 @@ The task is COMPLETE when ALL of the following are true:
 12. ✅ Markdown to HTML conversion works with Markdig
 13. ✅ Image format conversions work with ImageSharp (PNG, JPEG, WebP)
 14. ✅ PDF watermarking works with PdfSharpCore
-15. ✅ Webhook notifications work for completed/failed jobs
-15. ✅ JWT + API Key authentication functional
-16. ✅ Rate limiting implemented with per-user and per-endpoint policies
-17. ✅ Job cleanup service auto-deletes expired jobs
-18. ✅ Health checks report detailed component status (DB, Chromium, disk)
-19. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
-20. ✅ Unit tests exist with 80%+ coverage
-21. ✅ docker-compose.yml exists and works
-22. ✅ README.md documents how to run the project
+15. ✅ PDF password protection works with PdfSharpCore
+16. ✅ Webhook notifications work for completed/failed jobs
+17. ✅ JWT + API Key authentication functional
+18. ✅ Rate limiting implemented with per-user and per-endpoint policies
+19. ✅ Job cleanup service auto-deletes expired jobs
+20. ✅ Health checks report detailed component status (DB, Chromium, disk)
+21. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
+22. ✅ Unit tests exist with 80%+ coverage
+23. ✅ docker-compose.yml exists and works
+24. ✅ README.md documents how to run the project
 
 ---
 

@@ -438,6 +438,46 @@ Add watermarks to PDF output by including the `watermark` option in any PDF conv
 </details>
 
 <details>
+<summary><strong>PDF Password Protection</strong></summary>
+
+Encrypt PDF output with passwords and set permissions by including the `passwordProtection` option in any PDF conversion request:
+
+```json
+{
+  "htmlContent": "<html><body><h1>Secure Document</h1></body></html>",
+  "fileName": "document.pdf",
+  "options": {
+    "passwordProtection": {
+      "userPassword": "viewerpass123",
+      "ownerPassword": "adminpass456",
+      "allowPrinting": true,
+      "allowCopyingContent": false,
+      "allowModifying": false,
+      "allowAnnotations": false
+    }
+  }
+}
+```
+
+**Password Protection Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `userPassword` | string | required | Password to open/view the PDF |
+| `ownerPassword` | string | null | Password for full access (defaults to userPassword) |
+| `allowPrinting` | bool | true | Allow printing the document |
+| `allowCopyingContent` | bool | true | Allow copying text/images |
+| `allowModifying` | bool | false | Allow modifying the document |
+| `allowAnnotations` | bool | false | Allow adding annotations |
+
+**Notes:**
+- The `userPassword` is required to enable encryption
+- If `ownerPassword` is not specified, it defaults to the `userPassword`
+- Owner password grants full access regardless of permission settings
+- Can be combined with watermarking for additional document protection
+
+</details>
+
+<details>
 <summary><strong>Convert Markdown to HTML</strong></summary>
 
 ```json
