@@ -169,7 +169,14 @@ public class HtmlToPdfConverter : IFileConverter, IAsyncDisposable
         var launchOptions = new LaunchOptions
         {
             Headless = true,
-            Args = ["--no-sandbox", "--disable-setuid-sandbox"],
+            Args =
+            [
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--single-process",
+            ],
         };
 
         if (!string.IsNullOrWhiteSpace(this.settings.ExecutablePath))
