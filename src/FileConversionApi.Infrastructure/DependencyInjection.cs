@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddHttpClient<IWebhookService, WebhookService>();
         services.AddHostedService<JobCleanupService>();
         services.AddSingleton<IMetricsService, PrometheusMetricsService>();
+        services.AddSingleton<IPdfWatermarkService, PdfWatermarkService>();
 
         // Converters
         services.AddSingleton<HtmlToPdfConverter>();

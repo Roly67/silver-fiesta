@@ -39,6 +39,7 @@ FileConversionApi/
 - PuppeteerSharp for HTML to PDF conversion
 - Markdig for Markdown parsing
 - SixLabors.ImageSharp for image format conversions
+- PdfSharpCore for PDF watermarking
 - MediatR for CQRS pattern
 - FluentValidation for request validation
 - JWT Bearer Authentication
@@ -1407,7 +1408,8 @@ The task is COMPLETE when ALL of the following are true:
 11. ✅ Markdown to PDF conversion works with Markdig + PuppeteerSharp
 12. ✅ Markdown to HTML conversion works with Markdig
 13. ✅ Image format conversions work with ImageSharp (PNG, JPEG, WebP)
-14. ✅ Webhook notifications work for completed/failed jobs
+14. ✅ PDF watermarking works with PdfSharpCore
+15. ✅ Webhook notifications work for completed/failed jobs
 15. ✅ JWT + API Key authentication functional
 16. ✅ Rate limiting implemented with per-user and per-endpoint policies
 17. ✅ Job cleanup service auto-deletes expired jobs

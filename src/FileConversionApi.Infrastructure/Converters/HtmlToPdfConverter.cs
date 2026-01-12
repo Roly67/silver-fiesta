@@ -20,6 +20,7 @@ namespace FileConversionApi.Infrastructure.Converters;
 public class HtmlToPdfConverter : IFileConverter, IAsyncDisposable
 {
     private readonly PuppeteerSettings settings;
+    private readonly IPdfWatermarkService watermarkService;
     private readonly ILogger<HtmlToPdfConverter> logger;
     private IBrowser? browser;
     private bool disposed;
@@ -28,12 +29,15 @@ public class HtmlToPdfConverter : IFileConverter, IAsyncDisposable
     /// Initializes a new instance of the <see cref="HtmlToPdfConverter"/> class.
     /// </summary>
     /// <param name="settings">The Puppeteer settings.</param>
+    /// <param name="watermarkService">The PDF watermark service.</param>
     /// <param name="logger">The logger.</param>
     public HtmlToPdfConverter(
         IOptions<PuppeteerSettings> settings,
+        IPdfWatermarkService watermarkService,
         ILogger<HtmlToPdfConverter> logger)
     {
         this.settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
+        this.watermarkService = watermarkService ?? throw new ArgumentNullException(nameof(watermarkService));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -112,6 +116,23 @@ public class HtmlToPdfConverter : IFileConverter, IAsyncDisposable
             var pdfBytes = await page.PdfDataAsync(pdfOptions).ConfigureAwait(false);
 
             this.logger.LogDebug("HTML to PDF conversion completed, size: {Size} bytes", pdfBytes.Length);
+
+            // Apply watermark if specified
+            if (options.Watermark is not null && !string.IsNullOrWhiteSpace(options.Watermark.Text))
+            {
+                this.logger.LogDebug("Applying watermark to PDF");
+                var watermarkResult = await this.watermarkService
+                    .ApplyWatermarkAsync(pdfBytes, options.Watermark, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (watermarkResult.IsFailure)
+                {
+                    return watermarkResult.Error;
+                }
+
+                pdfBytes = watermarkResult.Value;
+                this.logger.LogDebug("Watermark applied, new size: {Size} bytes", pdfBytes.Length);
+            }
 
             return pdfBytes;
         }
