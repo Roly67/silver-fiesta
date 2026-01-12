@@ -63,8 +63,22 @@ Receive HTTP callbacks when conversion jobs complete or fail. Configure per-requ
 </td>
 <td width="50%">
 
+### 🚦 Rate Limiting
+Built-in rate limiting with per-user and per-endpoint policies. Protects against abuse with configurable limits and proper 429 responses.
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
 ### 🐳 Multi-Arch Docker
 Production-ready containers for both AMD64 and ARM64 architectures, available from GitHub Container Registry.
+
+</td>
+<td width="50%">
+
+### 📈 Production Ready
+Comprehensive logging with Serilog, health checks, Swagger documentation, and zero-warning builds with StyleCop analyzers.
 
 </td>
 </tr>
@@ -459,6 +473,39 @@ tests/
 ```
 
 > **Note:** Webhook notifications are sent when conversion jobs complete or fail. Failed webhook calls are retried automatically.
+
+</details>
+
+<details>
+<summary><strong>Rate Limiting Settings</strong></summary>
+
+```json
+{
+  "RateLimiting": {
+    "EnableRateLimiting": true,
+    "StandardPolicy": {
+      "PermitLimit": 100,
+      "WindowMinutes": 60
+    },
+    "ConversionPolicy": {
+      "PermitLimit": 50,
+      "WindowMinutes": 60
+    },
+    "AuthPolicy": {
+      "PermitLimit": 10,
+      "WindowMinutes": 15
+    }
+  }
+}
+```
+
+| Policy | Limit | Window | Endpoints |
+|--------|-------|--------|-----------|
+| `standard` | 100 requests | 1 hour | GET endpoints (status, download, history) |
+| `conversion` | 50 requests | 1 hour | POST conversion endpoints |
+| `auth` | 10 requests | 15 min | Authentication endpoints |
+
+> **Note:** Rate limits are applied per-user for authenticated requests and per-IP for anonymous requests. When rate limited, the API returns HTTP 429 with a `Retry-After` header.
 
 </details>
 

@@ -10,6 +10,7 @@ using FileConversionApi.Application.Queries.Conversion;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FileConversionApi.Api.Controllers.V1;
 
@@ -20,6 +21,7 @@ namespace FileConversionApi.Api.Controllers.V1;
 [Route("api/v1/convert")]
 [Produces("application/json")]
 [Authorize]
+[EnableRateLimiting("conversion")]
 public class ConvertController : ControllerBase
 {
     private readonly IMediator mediator;
@@ -134,6 +136,7 @@ public class ConvertController : ControllerBase
     /// <response code="404">Job not found.</response>
     /// <response code="401">Unauthorized.</response>
     [HttpGet("{jobId:guid}")]
+    [EnableRateLimiting("standard")]
     [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
@@ -170,6 +173,7 @@ public class ConvertController : ControllerBase
     /// <response code="404">Job not found.</response>
     /// <response code="401">Unauthorized.</response>
     [HttpGet("{jobId:guid}/download")]
+    [EnableRateLimiting("standard")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status404NotFound)]
@@ -212,6 +216,7 @@ public class ConvertController : ControllerBase
     /// <response code="200">History retrieved.</response>
     /// <response code="401">Unauthorized.</response>
     [HttpGet("history")]
+    [EnableRateLimiting("standard")]
     [ProducesResponseType(typeof(PagedResult<ConversionJobDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetHistory(

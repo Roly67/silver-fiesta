@@ -9,6 +9,7 @@ using FileConversionApi.Application.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FileConversionApi.Api.Controllers.V1;
 
@@ -18,6 +19,7 @@ namespace FileConversionApi.Api.Controllers.V1;
 [ApiController]
 [Route("api/v1/auth")]
 [Produces("application/json")]
+[EnableRateLimiting("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IMediator mediator;
