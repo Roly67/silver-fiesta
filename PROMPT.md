@@ -41,6 +41,7 @@ FileConversionApi/
 - MediatR for CQRS pattern
 - FluentValidation for request validation
 - JWT Bearer Authentication
+- ASP.NET Core Rate Limiting (built-in .NET 7+ middleware)
 - Serilog for logging (NOT Microsoft.Extensions.Logging config)
 - Sentry for error tracking
 - Swagger/OpenAPI documentation
@@ -353,6 +354,252 @@ services.AddHttpClient<IWebhookService, WebhookService>();
 
 ---
 
+## Rate Limiting
+
+Protect the API from abuse and ensure fair usage using the built-in ASP.NET Core rate limiting middleware.
+
+### Strategy
+
+Use a **Fixed Window** rate limiter with per-user limits:
+- Authenticated users: Limited by user ID
+- Unauthenticated users: Limited by IP address
+- Different limits for different endpoint categories
+
+### Rate Limit Policies
+
+| Policy | Window | Limit | Applies To |
+|--------|--------|-------|------------|
+| `standard` | 1 hour | 100 requests | General API endpoints |
+| `conversion` | 1 hour | 50 requests | Conversion endpoints (resource-intensive) |
+| `auth` | 15 minutes | 10 requests | Authentication endpoints (prevent brute force) |
+
+### Implementation
+
+#### 1. Configure Rate Limiting in Program.cs
+
+```csharp
+// Program.cs
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Add standard policy for general endpoints
+    options.AddPolicy("standard", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: GetPartitionKey(context),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromHours(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // Add conversion policy for resource-intensive endpoints
+    options.AddPolicy("conversion", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: GetPartitionKey(context),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 50,
+                Window = TimeSpan.FromHours(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // Add auth policy for authentication endpoints
+    options.AddPolicy("auth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(15),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // Custom response for rate limit exceeded
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/problem+json";
+
+        var problem = new
+        {
+            type = "https://httpstatuses.com/429",
+            title = "Too Many Requests",
+            status = 429,
+            detail = "Rate limit exceeded. Please try again later.",
+            retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+                ? retryAfter.TotalSeconds
+                : 60
+        };
+
+        await context.HttpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
+    };
+});
+
+// Helper method to get partition key
+static string GetPartitionKey(HttpContext context)
+{
+    // Use user ID for authenticated requests, IP for anonymous
+    var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    return userId ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+}
+
+// Add middleware (after UseAuthentication, before UseAuthorization)
+app.UseRateLimiter();
+```
+
+#### 2. Apply Rate Limiting to Controllers
+
+```csharp
+// Controllers/AuthController.cs
+[ApiController]
+[Route("api/v1/auth")]
+[EnableRateLimiting("auth")]
+public class AuthController : ControllerBase
+{
+    // All endpoints in this controller use "auth" policy
+}
+
+// Controllers/ConvertController.cs
+[ApiController]
+[Route("api/v1/convert")]
+[Authorize]
+[EnableRateLimiting("conversion")]
+public class ConvertController : ControllerBase
+{
+    // POST endpoints use "conversion" policy
+
+    [HttpGet("{jobId}")]
+    [EnableRateLimiting("standard")]  // Override: status checks use standard policy
+    public async Task<IActionResult> GetJobStatus(Guid jobId) { }
+
+    [HttpGet("history")]
+    [EnableRateLimiting("standard")]  // Override: history uses standard policy
+    public async Task<IActionResult> GetHistory() { }
+}
+```
+
+#### 3. Add Rate Limit Headers
+
+Include standard rate limit headers in responses:
+
+```csharp
+// Middleware/RateLimitHeadersMiddleware.cs
+public class RateLimitHeadersMiddleware
+{
+    private readonly RequestDelegate next;
+
+    public RateLimitHeadersMiddleware(RequestDelegate next)
+    {
+        this.next = next;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        await this.next(context);
+
+        // Headers are set by the rate limiter when available
+        // X-RateLimit-Limit: Maximum requests allowed
+        // X-RateLimit-Remaining: Requests remaining in current window
+        // X-RateLimit-Reset: Unix timestamp when the window resets
+        // Retry-After: Seconds until requests are allowed (only on 429)
+    }
+}
+```
+
+### Configuration
+
+```json
+{
+  "RateLimiting": {
+    "EnableRateLimiting": true,
+    "StandardPolicy": {
+      "PermitLimit": 100,
+      "WindowMinutes": 60
+    },
+    "ConversionPolicy": {
+      "PermitLimit": 50,
+      "WindowMinutes": 60
+    },
+    "AuthPolicy": {
+      "PermitLimit": 10,
+      "WindowMinutes": 15
+    }
+  }
+}
+```
+
+### Settings Class
+
+```csharp
+// Infrastructure/Options/RateLimitingSettings.cs
+public class RateLimitingSettings
+{
+    public const string SectionName = "RateLimiting";
+
+    public bool EnableRateLimiting { get; set; } = true;
+    public RateLimitPolicySettings StandardPolicy { get; set; } = new();
+    public RateLimitPolicySettings ConversionPolicy { get; set; } = new();
+    public RateLimitPolicySettings AuthPolicy { get; set; } = new();
+}
+
+public class RateLimitPolicySettings
+{
+    public int PermitLimit { get; set; } = 100;
+    public int WindowMinutes { get; set; } = 60;
+}
+```
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `Infrastructure/Options/RateLimitingSettings.cs` | Create settings class |
+| `Api/Program.cs` | Add rate limiting services and middleware |
+| `Api/Controllers/AuthController.cs` | Add `[EnableRateLimiting("auth")]` attribute |
+| `Api/Controllers/ConvertController.cs` | Add `[EnableRateLimiting("conversion")]` attribute |
+| `appsettings.json` | Add RateLimiting configuration section |
+| `appsettings.Development.json` | Add RateLimiting with higher limits for dev |
+
+### Response Headers
+
+When rate limiting is active, responses include:
+
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1704067200
+```
+
+When rate limit is exceeded (HTTP 429):
+
+```json
+{
+  "type": "https://httpstatuses.com/429",
+  "title": "Too Many Requests",
+  "status": 429,
+  "detail": "Rate limit exceeded. Please try again later.",
+  "retryAfter": 3600
+}
+```
+
+### Testing Rate Limits
+
+Unit tests should verify:
+- Rate limit headers are present in responses
+- 429 response after exceeding limit
+- Different limits apply to different policies
+- Authenticated vs anonymous partitioning works correctly
+
+---
+
 ## Error Handling
 
 ### Use Result Pattern (NOT exceptions for business logic)
@@ -446,7 +693,7 @@ finally
 - JWT tokens with configurable expiration
 - Refresh tokens with longer expiration
 - API key authentication as alternative
-- Rate limiting per user
+- Rate limiting per user (see Rate Limiting section)
 
 ---
 
@@ -520,9 +767,10 @@ The task is COMPLETE when ALL of the following are true:
 11. ✅ Markdown to PDF conversion works with Markdig + PuppeteerSharp
 12. ✅ Webhook notifications work for completed/failed jobs
 13. ✅ JWT + API Key authentication functional
-14. ✅ Unit tests exist with 80%+ coverage
-15. ✅ docker-compose.yml exists and works
-16. ✅ README.md documents how to run the project
+14. ✅ Rate limiting implemented with per-user and per-endpoint policies
+15. ✅ Unit tests exist with 80%+ coverage
+16. ✅ docker-compose.yml exists and works
+17. ✅ README.md documents how to run the project
 
 ---
 
@@ -542,4 +790,4 @@ When ALL completion criteria are met, output:
 
 ---
 
-**Current Status:** All features implemented. Webhook notifications complete.
+**Current Status:** All features implemented. Rate limiting complete.
