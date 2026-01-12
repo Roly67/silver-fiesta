@@ -58,4 +58,19 @@ public class ConversionOptions
     /// Gets or sets the JavaScript timeout in milliseconds.
     /// </summary>
     public int JavaScriptTimeout { get; set; } = 30000;
+
+    /// <summary>
+    /// Gets or sets the target image width in pixels (for image conversions).
+    /// </summary>
+    public int? ImageWidth { get; set; }
+
+    /// <summary>
+    /// Gets or sets the target image height in pixels (for image conversions).
+    /// </summary>
+    public int? ImageHeight { get; set; }
+
+    /// <summary>
+    /// Gets or sets the image quality (1-100, for JPEG/WebP).
+    /// </summary>
+    public int? ImageQuality { get; set; }
 }
