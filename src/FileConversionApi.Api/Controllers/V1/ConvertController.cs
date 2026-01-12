@@ -320,6 +320,51 @@ public class ConvertController : ControllerBase
     }
 
     /// <summary>
+    /// Processes multiple conversions in a single batch request.
+    /// </summary>
+    /// <param name="request">The batch conversion request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The batch conversion results.</returns>
+    /// <remarks>
+    /// Supports up to 20 items per batch. Each item can be a different conversion type:
+    /// html-to-pdf, markdown-to-pdf, markdown-to-html, or image.
+    /// Returns results for each item including job details or error information.
+    /// </remarks>
+    /// <response code="200">Batch processed (may contain individual failures).</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("batch")]
+    [ProducesResponseType(typeof(BatchConversionResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> BatchConvert(
+        [FromBody] BatchConversionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new BatchConversionCommand
+        {
+            Items = request.Items ?? [],
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Batch Conversion Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.Ok(result.Value);
+    }
+
+    /// <summary>
     /// Gets a conversion job by ID.
     /// </summary>
     /// <param name="jobId">The job identifier.</param>
