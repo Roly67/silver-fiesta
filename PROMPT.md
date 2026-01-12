@@ -217,6 +217,16 @@ Contains:
 ### Health
 - `GET /health` - Health check endpoint (200 OK)
 
+### Admin (requires Admin role)
+- `GET /api/v1/admin/users` - List all users (paginated)
+- `GET /api/v1/admin/users/{id}` - Get user details
+- `POST /api/v1/admin/users/{id}/disable` - Disable a user
+- `POST /api/v1/admin/users/{id}/enable` - Enable a user
+- `POST /api/v1/admin/users/{id}/reset-api-key` - Reset user's API key
+- `POST /api/v1/admin/users/{id}/grant-admin` - Grant admin privileges
+- `POST /api/v1/admin/users/{id}/revoke-admin` - Revoke admin privileges
+- `GET /api/v1/admin/stats` - Get job statistics
+
 ---
 
 ## Converter Architecture

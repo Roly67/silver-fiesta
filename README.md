@@ -124,6 +124,17 @@ Merge multiple PDFs, split by page ranges, add watermarks, and protect with pass
 
 </td>
 </tr>
+<tr>
+<td width="50%">
+
+### 👑 Admin API
+Role-based admin endpoints for user management, job statistics, and system monitoring. Disable users, reset API keys, and grant admin privileges.
+
+</td>
+<td width="50%">
+
+</td>
+</tr>
 </table>
 
 <br />
@@ -751,6 +762,97 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:5000']
     metrics_path: '/metrics'
+```
+
+</details>
+
+<br />
+
+### Admin API
+
+<table>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/admin/users</code></td>
+<td>List all users (paginated)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/admin/users/{id}</code></td>
+<td>Get user details</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/admin/users/{id}/disable</code></td>
+<td>Disable a user</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/admin/users/{id}/enable</code></td>
+<td>Enable a user</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/admin/users/{id}/reset-api-key</code></td>
+<td>Reset user's API key</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/admin/users/{id}/grant-admin</code></td>
+<td>Grant admin privileges</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/admin/users/{id}/revoke-admin</code></td>
+<td>Revoke admin privileges</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/admin/stats</code></td>
+<td>Get job statistics</td>
+</tr>
+</table>
+
+<details>
+<summary><strong>Admin Endpoints (requires Admin role)</strong></summary>
+
+**Get Job Statistics:**
+```json
+GET /api/v1/admin/stats
+Authorization: Bearer <admin-token>
+
+Response:
+{
+  "totalJobs": 1500,
+  "completedJobs": 1200,
+  "failedJobs": 50,
+  "pendingJobs": 250,
+  "totalUsers": 45,
+  "successRate": 80.0
+}
+```
+
+**List Users:**
+```json
+GET /api/v1/admin/users?page=1&pageSize=20
+Authorization: Bearer <admin-token>
+
+Response:
+{
+  "items": [
+    {
+      "id": "...",
+      "email": "user@example.com",
+      "isActive": true,
+      "isAdmin": false,
+      "createdAt": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalCount": 45,
+  "totalPages": 3
+}
 ```
 
 </details>

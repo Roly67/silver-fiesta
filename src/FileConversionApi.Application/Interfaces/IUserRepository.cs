@@ -57,4 +57,20 @@ public interface IUserRepository
     /// </summary>
     /// <param name="user">The user to update.</param>
     void Update(User user);
+
+    /// <summary>
+    /// Gets all users with pagination.
+    /// </summary>
+    /// <param name="page">The page number (1-based).</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A tuple of users and total count.</returns>
+    Task<(IReadOnlyList<User> Users, int TotalCount)> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets the total number of users.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The total count of users.</returns>
+    Task<int> GetTotalCountAsync(CancellationToken cancellationToken);
 }
