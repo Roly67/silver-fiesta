@@ -81,24 +81,32 @@ Background service automatically deletes expired jobs. Configurable retention pe
 Production-ready containers for both AMD64 and ARM64 architectures, available from GitHub Container Registry.
 
 </td>
+</tr>
+<tr>
 <td width="50%">
 
 ### 🖼️ Image Conversions
 Convert images between PNG, JPEG, and WebP formats using ImageSharp. Supports resize, quality settings, and maintains aspect ratio.
 
 </td>
-</tr>
-<tr>
 <td width="50%">
 
 ### 📈 Prometheus Metrics
 Built-in `/metrics` endpoint exposes conversion statistics, HTTP request metrics, and system health for Grafana dashboards.
 
 </td>
+</tr>
+<tr>
 <td width="50%">
 
 ### 🩺 Enhanced Health Checks
 Detailed `/health` endpoint reports database connectivity, Chromium availability, and disk space status with degraded state detection.
+
+</td>
+<td width="50%">
+
+### 📋 Production Ready
+Comprehensive logging with Serilog, Swagger documentation, and zero-warning builds with StyleCop analyzers.
 
 </td>
 </tr>
