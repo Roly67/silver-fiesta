@@ -75,6 +75,21 @@ public class ConversionOptions
     public int? ImageQuality { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether to capture the full scrollable page (for HTML to image).
+    /// </summary>
+    public bool FullPage { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the viewport width in pixels (for HTML to image).
+    /// </summary>
+    public int ViewportWidth { get; set; } = 1920;
+
+    /// <summary>
+    /// Gets or sets the viewport height in pixels (for HTML to image).
+    /// </summary>
+    public int ViewportHeight { get; set; } = 1080;
+
+    /// <summary>
     /// Gets or sets the watermark options for PDF output.
     /// </summary>
     public WatermarkOptions? Watermark { get; set; }
