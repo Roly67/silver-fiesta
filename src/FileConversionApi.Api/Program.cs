@@ -23,6 +23,9 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+
 using Prometheus;
 
 using Serilog;
@@ -157,6 +160,61 @@ try
                 await context.HttpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
             };
         });
+    }
+
+    // Configure OpenTelemetry Tracing
+    var otelSettings = builder.Configuration
+        .GetSection(OpenTelemetrySettings.SectionName)
+        .Get<OpenTelemetrySettings>() ?? new OpenTelemetrySettings();
+
+    if (otelSettings.EnableTracing)
+    {
+        builder.Services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource
+                .AddService(
+                    serviceName: otelSettings.ServiceName,
+                    serviceVersion: otelSettings.ServiceVersion ?? typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0"))
+            .WithTracing(tracing =>
+            {
+                tracing
+                    .AddAspNetCoreInstrumentation(options =>
+                    {
+                        options.RecordException = true;
+                        options.Filter = context =>
+                        {
+                            // Exclude health check and metrics endpoints from tracing
+                            var path = context.Request.Path.Value ?? string.Empty;
+                            return !path.StartsWith("/health", StringComparison.OrdinalIgnoreCase)
+                                && !path.StartsWith("/metrics", StringComparison.OrdinalIgnoreCase);
+                        };
+                    })
+                    .AddHttpClientInstrumentation(options =>
+                    {
+                        options.RecordException = true;
+                    })
+                    .AddEntityFrameworkCoreInstrumentation()
+                    .AddSource("FileConversionApi.Conversions");
+
+                // Configure sampling
+                if (otelSettings.SamplingRatio < 1.0)
+                {
+                    tracing.SetSampler(new TraceIdRatioBasedSampler(otelSettings.SamplingRatio));
+                }
+
+                // Configure exporters
+                if (!string.IsNullOrEmpty(otelSettings.OtlpEndpoint))
+                {
+                    tracing.AddOtlpExporter(options =>
+                    {
+                        options.Endpoint = new Uri(otelSettings.OtlpEndpoint);
+                    });
+                }
+
+                if (otelSettings.ExportToConsole)
+                {
+                    tracing.AddConsoleExporter();
+                }
+            });
     }
 
     builder.Services.AddControllers();

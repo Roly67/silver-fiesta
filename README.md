@@ -138,6 +138,17 @@ Save and reuse conversion settings with named templates. Define page sizes, marg
 
 </td>
 </tr>
+<tr>
+<td width="50%">
+
+### 🔭 OpenTelemetry Tracing
+Distributed tracing with OpenTelemetry for end-to-end request visibility. Export traces to Jaeger, Zipkin, or any OTLP-compatible backend.
+
+</td>
+<td width="50%">
+
+</td>
+</tr>
 </table>
 
 <br />
@@ -1107,6 +1118,39 @@ tests/
 | `BatchSize` | 100 | Max jobs to delete per run |
 
 > **Note:** The cleanup service runs as a background hosted service. Failed jobs are retained longer to allow for debugging issues.
+
+</details>
+
+<details>
+<summary><strong>OpenTelemetry Settings</strong></summary>
+
+```json
+{
+  "OpenTelemetry": {
+    "EnableTracing": true,
+    "ServiceName": "FileConversionApi",
+    "OtlpEndpoint": "http://localhost:4317",
+    "ExportToConsole": false,
+    "SamplingRatio": 1.0
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `EnableTracing` | true | Enable/disable distributed tracing |
+| `ServiceName` | FileConversionApi | Service name in traces |
+| `OtlpEndpoint` | null | OTLP exporter endpoint (e.g., Jaeger, Zipkin) |
+| `ExportToConsole` | false | Output traces to console (dev only) |
+| `SamplingRatio` | 1.0 | Trace sampling ratio (0.0-1.0) |
+
+**Instrumented operations:**
+- HTTP requests (ASP.NET Core)
+- Outbound HTTP calls (HttpClient)
+- Database queries (Entity Framework Core)
+- Conversion operations (custom spans)
+
+> **Note:** To view traces, run Jaeger locally: `docker run -d -p 4317:4317 -p 16686:16686 jaegertracing/all-in-one:latest` and set `OtlpEndpoint` to `http://localhost:4317`.
 
 </details>
 
