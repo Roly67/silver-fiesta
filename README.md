@@ -133,6 +133,9 @@ Role-based admin endpoints for user management, job statistics, and system monit
 </td>
 <td width="50%">
 
+### 📝 Conversion Templates
+Save and reuse conversion settings with named templates. Define page sizes, margins, watermarks, and other options for consistent output.
+
 </td>
 </tr>
 </table>
@@ -854,6 +857,85 @@ Response:
   "totalPages": 3
 }
 ```
+
+</details>
+
+<br />
+
+### Conversion Templates
+
+<table>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/templates</code></td>
+<td>List user's templates (optional ?targetFormat= filter)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/templates/{id}</code></td>
+<td>Get template details</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/templates</code></td>
+<td>Create new template</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td><code>/api/v1/templates/{id}</code></td>
+<td>Update template</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/templates/{id}</code></td>
+<td>Delete template</td>
+</tr>
+</table>
+
+<details>
+<summary><strong>Template Examples</strong></summary>
+
+**Create Template:**
+```json
+POST /api/v1/templates
+Authorization: Bearer <token>
+
+{
+  "name": "A4 Landscape Report",
+  "description": "Standard report format with company watermark",
+  "targetFormat": "pdf",
+  "options": {
+    "pageSize": "A4",
+    "landscape": true,
+    "marginTop": 25,
+    "marginBottom": 25,
+    "watermark": {
+      "text": "CONFIDENTIAL",
+      "opacity": 0.2
+    }
+  }
+}
+```
+
+**List Templates:**
+```json
+GET /api/v1/templates?targetFormat=pdf
+Authorization: Bearer <token>
+
+Response:
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "A4 Landscape Report",
+    "description": "Standard report format with company watermark",
+    "targetFormat": "pdf",
+    "options": { ... },
+    "createdAt": "2026-01-13T12:00:00Z"
+  }
+]
+```
+
+**Supported target formats:** `pdf`, `html`, `png`, `jpeg`, `webp`, `gif`, `bmp`
 
 </details>
 

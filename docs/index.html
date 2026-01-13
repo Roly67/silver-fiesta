@@ -469,6 +469,11 @@
                     <h4>Admin API</h4>
                     <p>Role-based admin endpoints for user management, job statistics, and system monitoring.</p>
                 </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128221;</div>
+                    <h4>Conversion Templates</h4>
+                    <p>Save and reuse conversion settings including page sizes, margins, and watermarks.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -639,6 +644,45 @@
                         <span class="method method-get">GET</span>
                         <span class="endpoint-path">/api/v1/admin/stats</span>
                         <span class="endpoint-desc">Get job statistics</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h4>Templates</h4>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/templates</span>
+                        <span class="endpoint-desc">List user's conversion templates</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/templates/{id}</span>
+                        <span class="endpoint-desc">Get template by ID</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/templates</span>
+                        <span class="endpoint-desc">Create a new template</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-put">PUT</span>
+                        <span class="endpoint-path">/api/v1/templates/{id}</span>
+                        <span class="endpoint-desc">Update a template</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-delete">DELETE</span>
+                        <span class="endpoint-path">/api/v1/templates/{id}</span>
+                        <span class="endpoint-desc">Delete a template</span>
                     </div>
                 </div>
             </div>

@@ -192,6 +192,16 @@ Contains:
 - CompletedAt (DateTimeOffset, nullable)
 - WebhookUrl (string, nullable) - URL to notify when job completes
 
+### ConversionTemplates Table
+- Id (Guid, PK)
+- UserId (Guid, FK to Users)
+- Name (string, not null, max 100)
+- Description (string, nullable, max 500)
+- TargetFormat (string, not null) - e.g., "pdf", "html", "png"
+- OptionsJson (jsonb, not null) - Serialized ConversionOptions
+- CreatedAt (DateTimeOffset, not null)
+- UpdatedAt (DateTimeOffset, nullable)
+
 ---
 
 ## API Endpoints
@@ -216,6 +226,13 @@ Contains:
 
 ### Health
 - `GET /health` - Health check endpoint (200 OK)
+
+### Templates
+- `GET /api/v1/templates` - List user's templates (optional ?targetFormat= filter)
+- `GET /api/v1/templates/{id}` - Get template details
+- `POST /api/v1/templates` - Create new template
+- `PUT /api/v1/templates/{id}` - Update template
+- `DELETE /api/v1/templates/{id}` - Delete template
 
 ### Admin (requires Admin role)
 - `GET /api/v1/admin/users` - List all users (paginated)
@@ -438,6 +455,84 @@ Process multiple conversion requests in a single API call.
 - Maximum batch size: 20 items
 - Each item is processed sequentially
 - Partial success/failure is supported
+
+---
+
+## Conversion Templates
+
+Save and reuse conversion settings for consistent output across multiple conversions.
+
+### Features
+
+- Create named templates with predefined conversion options
+- Filter templates by target format
+- Templates are user-scoped (private to each user)
+- Supports all conversion options (page size, margins, watermarks, etc.)
+
+### Template Entity
+
+```csharp
+public class ConversionTemplate
+{
+    public ConversionTemplateId Id { get; }
+    public UserId UserId { get; }
+    public string Name { get; }
+    public string? Description { get; }
+    public string TargetFormat { get; }  // pdf, html, png, jpeg, webp, gif, bmp
+    public string OptionsJson { get; }   // Serialized ConversionOptions
+    public DateTimeOffset CreatedAt { get; }
+    public DateTimeOffset? UpdatedAt { get; }
+}
+```
+
+### API Examples
+
+**Create Template:**
+```json
+POST /api/v1/templates
+{
+  "name": "A4 Landscape Report",
+  "description": "Standard report format with company watermark",
+  "targetFormat": "pdf",
+  "options": {
+    "pageSize": "A4",
+    "landscape": true,
+    "marginTop": 25,
+    "marginBottom": 25,
+    "watermark": {
+      "text": "CONFIDENTIAL",
+      "opacity": 0.2
+    }
+  }
+}
+```
+
+**List Templates:**
+```json
+GET /api/v1/templates?targetFormat=pdf
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "A4 Landscape Report",
+    "description": "Standard report format with company watermark",
+    "targetFormat": "pdf",
+    "options": { ... },
+    "createdAt": "2026-01-13T12:00:00Z"
+  }
+]
+```
+
+### Supported Target Formats
+
+| Format | Description |
+|--------|-------------|
+| `pdf` | PDF document options (page size, margins, watermark, password) |
+| `html` | HTML output options |
+| `png` | PNG image options (width, height) |
+| `jpeg` | JPEG image options (width, height, quality) |
+| `webp` | WebP image options (width, height, quality) |
+| `gif` | GIF image options (width, height) |
+| `bmp` | BMP image options (width, height) |
 
 ---
 
@@ -1532,6 +1627,9 @@ The task is COMPLETE when ALL of the following are true:
 23. ✅ Unit tests exist with 80%+ coverage
 24. ✅ docker-compose.yml exists and works
 25. ✅ README.md documents how to run the project
+26. ✅ Batch conversions work (multiple files in single request)
+27. ✅ Admin API for user management and statistics
+28. ✅ Conversion templates CRUD for saving/reusing settings
 
 ---
 

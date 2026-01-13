@@ -47,6 +47,7 @@ public static class DependencyInjection
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IConversionJobRepository, ConversionJobRepository>();
+        services.AddScoped<IConversionTemplateRepository, ConversionTemplateRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Services
