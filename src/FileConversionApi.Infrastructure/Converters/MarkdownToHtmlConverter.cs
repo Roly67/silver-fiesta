@@ -64,7 +64,7 @@ public class MarkdownToHtmlConverter : IFileConverter
 
             return Encoding.UTF8.GetBytes(styledHtml);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             this.logger.LogError(ex, "Markdown to HTML conversion failed");
             return ConversionJobErrors.ConversionFailed(ex.Message);

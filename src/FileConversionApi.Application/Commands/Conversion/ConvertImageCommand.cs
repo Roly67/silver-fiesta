@@ -12,7 +12,7 @@ namespace FileConversionApi.Application.Commands.Conversion;
 /// <summary>
 /// Command to convert an image between formats.
 /// </summary>
-public record ConvertImageCommand : IRequest<Result<ConversionJobDto>>
+public record ConvertImageCommand : IRequest<Result<ConversionJobDto>>, IConversionCommand
 {
     /// <summary>
     /// Gets the image data as base64 encoded string.

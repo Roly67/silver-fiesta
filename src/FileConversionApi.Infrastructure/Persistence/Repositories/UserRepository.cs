@@ -68,4 +68,33 @@ public class UserRepository : IUserRepository
     {
         this.context.Users.Update(user);
     }
+
+    /// <inheritdoc/>
+    public async Task<(IReadOnlyList<User> Users, int TotalCount)> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var totalCount = await this.context.Users.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var users = await this.context.Users
+            .OrderByDescending(u => u.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (users, totalCount);
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> GetTotalCountAsync(CancellationToken cancellationToken)
+    {
+        return await this.context.Users.CountAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> AnyAdminExistsAsync(CancellationToken cancellationToken)
+    {
+        return await this.context.Users
+            .AnyAsync(u => u.IsAdmin, cancellationToken)
+            .ConfigureAwait(false);
+    }
 }

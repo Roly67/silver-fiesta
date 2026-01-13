@@ -20,6 +20,7 @@ public class DownloadConversionResultQueryHandler
 {
     private readonly IConversionJobRepository jobRepository;
     private readonly ICurrentUserService currentUserService;
+    private readonly ICloudStorageService cloudStorageService;
     private readonly ILogger<DownloadConversionResultQueryHandler> logger;
 
     /// <summary>
@@ -27,14 +28,17 @@ public class DownloadConversionResultQueryHandler
     /// </summary>
     /// <param name="jobRepository">The job repository.</param>
     /// <param name="currentUserService">The current user service.</param>
+    /// <param name="cloudStorageService">The cloud storage service.</param>
     /// <param name="logger">The logger.</param>
     public DownloadConversionResultQueryHandler(
         IConversionJobRepository jobRepository,
         ICurrentUserService currentUserService,
+        ICloudStorageService cloudStorageService,
         ILogger<DownloadConversionResultQueryHandler> logger)
     {
         this.jobRepository = jobRepository ?? throw new ArgumentNullException(nameof(jobRepository));
         this.currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
+        this.cloudStorageService = cloudStorageService ?? throw new ArgumentNullException(nameof(cloudStorageService));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -69,16 +73,58 @@ public class DownloadConversionResultQueryHandler
             return ConversionJobErrors.NotCompleted;
         }
 
-        if (job.OutputData is null || job.OutputFileName is null)
+        if (job.OutputFileName is null)
         {
             return ConversionJobErrors.NoOutputAvailable;
+        }
+
+        byte[] content;
+
+        if (job.StorageLocation == StorageLocation.CloudStorage)
+        {
+            if (string.IsNullOrEmpty(job.CloudStorageKey))
+            {
+                this.logger.LogError(
+                    "Job {JobId} has cloud storage location but no storage key",
+                    request.JobId);
+                return ConversionJobErrors.NoOutputAvailable;
+            }
+
+            this.logger.LogDebug(
+                "Downloading job {JobId} output from cloud storage: {StorageKey}",
+                request.JobId,
+                job.CloudStorageKey);
+
+            var downloadResult = await this.cloudStorageService
+                .DownloadAsync(job.CloudStorageKey, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (downloadResult.IsFailure)
+            {
+                this.logger.LogError(
+                    "Failed to download job {JobId} from cloud storage: {Error}",
+                    request.JobId,
+                    downloadResult.Error.Message);
+                return downloadResult.Error;
+            }
+
+            content = downloadResult.Value;
+        }
+        else
+        {
+            if (job.OutputData is null)
+            {
+                return ConversionJobErrors.NoOutputAvailable;
+            }
+
+            content = job.OutputData;
         }
 
         var contentType = GetContentType(job.TargetFormat);
 
         return new FileDownloadResult
         {
-            Content = job.OutputData,
+            Content = content,
             FileName = job.OutputFileName,
             ContentType = contentType,
         };

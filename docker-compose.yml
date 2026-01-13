@@ -15,8 +15,17 @@ services:
       - JwtSettings__Audience=FileConversionApi
       - JwtSettings__TokenExpirationMinutes=60
       - JwtSettings__RefreshTokenExpirationDays=7
+      - CloudStorage__Enabled=true
+      - CloudStorage__ServiceUrl=http://minio:9000
+      - CloudStorage__BucketName=file-conversions
+      - CloudStorage__AccessKey=minioadmin
+      - CloudStorage__SecretKey=minioadmin
+      - CloudStorage__Region=us-east-1
+      - CloudStorage__ForcePathStyle=true
     depends_on:
       db:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     restart: unless-stopped
 
@@ -37,5 +46,36 @@ services:
       retries: 5
     restart: unless-stopped
 
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/file-conversions --ignore-existing;
+      exit 0;
+      "
+
 volumes:
   postgres_data:
+  minio_data:
