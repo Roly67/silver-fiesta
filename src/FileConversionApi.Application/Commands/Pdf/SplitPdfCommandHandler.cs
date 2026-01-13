@@ -27,6 +27,7 @@ public class SplitPdfCommandHandler : IRequestHandler<SplitPdfCommand, Result<Co
     private readonly ICurrentUserService currentUserService;
     private readonly IWebhookService webhookService;
     private readonly IMetricsService metricsService;
+    private readonly ICloudStorageService cloudStorageService;
     private readonly ILogger<SplitPdfCommandHandler> logger;
 
     /// <summary>
@@ -38,6 +39,7 @@ public class SplitPdfCommandHandler : IRequestHandler<SplitPdfCommand, Result<Co
     /// <param name="currentUserService">The current user service.</param>
     /// <param name="webhookService">The webhook service.</param>
     /// <param name="metricsService">The metrics service.</param>
+    /// <param name="cloudStorageService">The cloud storage service.</param>
     /// <param name="logger">The logger.</param>
     public SplitPdfCommandHandler(
         IConversionJobRepository jobRepository,
@@ -46,6 +48,7 @@ public class SplitPdfCommandHandler : IRequestHandler<SplitPdfCommand, Result<Co
         ICurrentUserService currentUserService,
         IWebhookService webhookService,
         IMetricsService metricsService,
+        ICloudStorageService cloudStorageService,
         ILogger<SplitPdfCommandHandler> logger)
     {
         this.jobRepository = jobRepository ?? throw new ArgumentNullException(nameof(jobRepository));
@@ -54,6 +57,7 @@ public class SplitPdfCommandHandler : IRequestHandler<SplitPdfCommand, Result<Co
         this.currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         this.webhookService = webhookService ?? throw new ArgumentNullException(nameof(webhookService));
         this.metricsService = metricsService ?? throw new ArgumentNullException(nameof(metricsService));
+        this.cloudStorageService = cloudStorageService ?? throw new ArgumentNullException(nameof(cloudStorageService));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -128,7 +132,31 @@ public class SplitPdfCommandHandler : IRequestHandler<SplitPdfCommand, Result<Co
             var zipBytes = CreateZipArchive(splitResult.Value);
 
             var outputFileName = Path.ChangeExtension(inputFileName, ".zip");
-            job.MarkAsCompleted(outputFileName, zipBytes);
+
+            if (this.cloudStorageService.IsEnabled)
+            {
+                var storageKey = $"{userId.Value.Value}/{job.Id.Value}/{outputFileName}";
+                var uploadResult = await this.cloudStorageService
+                    .UploadAsync(zipBytes, storageKey, "application/zip", cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (uploadResult.IsFailure)
+                {
+                    stopwatch.Stop();
+                    this.metricsService.RecordConversionFailed("pdf-split", "zip");
+                    job.MarkAsFailed($"Cloud storage upload failed: {uploadResult.Error.Message}");
+                    await this.unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                    await this.webhookService.SendJobCompletedAsync(job, cancellationToken).ConfigureAwait(false);
+                    return uploadResult.Error;
+                }
+
+                job.MarkAsCompletedWithCloudStorage(outputFileName, storageKey);
+            }
+            else
+            {
+                job.MarkAsCompleted(outputFileName, zipBytes);
+            }
+
             await this.unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await this.webhookService.SendJobCompletedAsync(job, cancellationToken).ConfigureAwait(false);
 
