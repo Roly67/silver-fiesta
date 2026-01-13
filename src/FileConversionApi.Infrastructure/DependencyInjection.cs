@@ -72,6 +72,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRateLimitService, UserRateLimitService>();
         services.AddSingleton<ILibreOfficeService, LibreOfficeService>();
         services.AddSingleton<ICloudStorageService, CloudStorageService>();
+        services.AddSingleton<IPdfTextExtractor, PdfTextExtractor>();
 
         // Converters
         services.AddSingleton<HtmlToPdfConverter>();
