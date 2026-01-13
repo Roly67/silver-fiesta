@@ -46,6 +46,7 @@ try
         .Enrich.FromLogContext());
 
     // Add services to the container.
+    builder.Services.AddMemoryCache();
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
 
