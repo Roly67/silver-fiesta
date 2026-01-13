@@ -489,6 +489,11 @@
                     <h4>Admin Seeding</h4>
                     <p>Automatic admin user creation on startup for initial setup. Configurable credentials with production-safe defaults.</p>
                 </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128202;</div>
+                    <h4>Usage Quotas</h4>
+                    <p>Per-user monthly limits on conversions and bytes processed. Automatic reset each month with admin exemption support.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -659,6 +664,38 @@
                         <span class="method method-get">GET</span>
                         <span class="endpoint-path">/api/v1/admin/stats</span>
                         <span class="endpoint-desc">Get job statistics</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/quota</span>
+                        <span class="endpoint-desc">Get user's quota</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/quota/history</span>
+                        <span class="endpoint-desc">Get user's quota history</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-put">PUT</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/quota</span>
+                        <span class="endpoint-desc">Update user's quota limits</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h4>Quota</h4>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/quota</span>
+                        <span class="endpoint-desc">Get current user's usage quota</span>
                     </div>
                 </div>
             </div>

@@ -2,6 +2,7 @@
 // FileConversionApi
 // </copyright>
 
+using FileConversionApi.Application.Commands.Conversion;
 using FileConversionApi.Application.DTOs;
 using FileConversionApi.Domain.Primitives;
 
@@ -12,7 +13,7 @@ namespace FileConversionApi.Application.Commands.Pdf;
 /// <summary>
 /// Command to merge multiple PDF documents into one.
 /// </summary>
-public record MergePdfsCommand : IRequest<Result<ConversionJobDto>>
+public record MergePdfsCommand : IRequest<Result<ConversionJobDto>>, IConversionCommand
 {
     /// <summary>
     /// Gets the PDF documents as base64 encoded strings.

@@ -152,6 +152,17 @@ Configurable file size limits, URL allowlist/blocklist for SSRF protection, and 
 
 </td>
 </tr>
+<tr>
+<td width="50%">
+
+### 📊 Usage Quotas
+Per-user monthly limits on conversions and bytes processed. Admins can view and adjust quotas, and are optionally exempt from limits.
+
+</td>
+<td width="50%">
+
+</td>
+</tr>
 </table>
 
 <br />
@@ -785,6 +796,52 @@ scrape_configs:
 
 <br />
 
+### Usage Quotas
+
+<table>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/quota</code></td>
+<td>Get current user's quota</td>
+</tr>
+</table>
+
+<details>
+<summary><strong>Quota Response</strong></summary>
+
+```json
+GET /api/v1/quota
+Authorization: Bearer <token>
+
+Response:
+{
+  "year": 2026,
+  "month": 1,
+  "conversionsUsed": 45,
+  "conversionsLimit": 1000,
+  "remainingConversions": 955,
+  "bytesProcessed": 52428800,
+  "bytesLimit": 1073741824,
+  "remainingBytes": 1021313024,
+  "isQuotaExceeded": false,
+  "updatedAt": "2026-01-13T12:00:00Z"
+}
+```
+
+**Quota exceeded response (HTTP 429):**
+```json
+{
+  "type": "https://httpstatuses.com/429",
+  "title": "Quota Exceeded",
+  "status": 429,
+  "detail": "Monthly conversion limit exceeded: 1000/1000 conversions used."
+}
+```
+
+</details>
+
+<br />
+
 ### Admin API
 
 <table>
@@ -827,6 +884,21 @@ scrape_configs:
 <td><code>GET</code></td>
 <td><code>/api/v1/admin/stats</code></td>
 <td>Get job statistics</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/admin/users/{id}/quota</code></td>
+<td>Get user's current quota</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/admin/users/{id}/quota/history</code></td>
+<td>Get user's quota history</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td><code>/api/v1/admin/users/{id}/quota</code></td>
+<td>Update user's quota limits</td>
 </tr>
 </table>
 
@@ -1179,6 +1251,35 @@ tests/
 | `SkipIfAdminExists` | true | Skip seeding if any admin user already exists |
 
 > **Security Note:** Change the default password in production using environment variables: `AdminSeed__Password`. Disable admin seeding after initial setup by setting `Enabled: false`.
+
+</details>
+
+<details>
+<summary><strong>Usage Quotas Settings</strong></summary>
+
+```json
+{
+  "UsageQuotas": {
+    "Enabled": true,
+    "DefaultMonthlyConversions": 1000,
+    "DefaultMonthlyBytes": 1073741824,
+    "AdminMonthlyConversions": 0,
+    "AdminMonthlyBytes": 0,
+    "ExemptAdmins": true
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Enabled` | true | Enable/disable quota enforcement |
+| `DefaultMonthlyConversions` | 1000 | Default monthly conversion limit per user |
+| `DefaultMonthlyBytes` | 1073741824 | Default monthly bytes limit (1GB) |
+| `AdminMonthlyConversions` | 0 | Admin monthly conversion limit (0 = unlimited) |
+| `AdminMonthlyBytes` | 0 | Admin monthly bytes limit (0 = unlimited) |
+| `ExemptAdmins` | true | Exempt admin users from quota checks |
+
+> **Note:** Quotas reset monthly. When a user exceeds their quota, conversion requests return HTTP 429 with a detailed error message. Admins can view and adjust user quotas via the Admin API.
 
 </details>
 

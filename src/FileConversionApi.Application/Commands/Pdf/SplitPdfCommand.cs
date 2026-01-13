@@ -2,6 +2,7 @@
 // FileConversionApi
 // </copyright>
 
+using FileConversionApi.Application.Commands.Conversion;
 using FileConversionApi.Application.DTOs;
 using FileConversionApi.Domain.Primitives;
 
@@ -12,7 +13,7 @@ namespace FileConversionApi.Application.Commands.Pdf;
 /// <summary>
 /// Command to split a PDF document into multiple PDFs.
 /// </summary>
-public record SplitPdfCommand : IRequest<Result<ConversionJobDto>>
+public record SplitPdfCommand : IRequest<Result<ConversionJobDto>>, IConversionCommand
 {
     /// <summary>
     /// Gets the PDF document as a base64 encoded string.

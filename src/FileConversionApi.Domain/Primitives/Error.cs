@@ -34,4 +34,27 @@ public sealed record Error(string Code, string Message)
     /// <param name="message">The error message.</param>
     /// <returns>A new validation error.</returns>
     public static Error Validation(string code, string message) => new(code, message);
+
+    /// <summary>
+    /// Creates a not found error with the specified code and message.
+    /// </summary>
+    /// <param name="code">The error code.</param>
+    /// <param name="message">The error message.</param>
+    /// <returns>A new not found error.</returns>
+    public static Error NotFound(string code, string message) => new(code, message);
+
+    /// <summary>
+    /// Creates a forbidden error with the specified code and message.
+    /// </summary>
+    /// <param name="code">The error code.</param>
+    /// <param name="message">The error message.</param>
+    /// <returns>A new forbidden error.</returns>
+    public static Error Forbidden(string code, string message) => new(code, message);
+
+    /// <summary>
+    /// Creates an unauthorized error with the specified message.
+    /// </summary>
+    /// <param name="message">The error message.</param>
+    /// <returns>A new unauthorized error.</returns>
+    public static Error Unauthorized(string message) => new("Error.Unauthorized", message);
 }

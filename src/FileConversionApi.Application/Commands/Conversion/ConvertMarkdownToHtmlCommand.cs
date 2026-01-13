@@ -12,7 +12,7 @@ namespace FileConversionApi.Application.Commands.Conversion;
 /// <summary>
 /// Command to convert Markdown to HTML.
 /// </summary>
-public record ConvertMarkdownToHtmlCommand : IRequest<Result<ConversionJobDto>>
+public record ConvertMarkdownToHtmlCommand : IRequest<Result<ConversionJobDto>>, IConversionCommand
 {
     /// <summary>
     /// Gets the Markdown content to convert.
