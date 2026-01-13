@@ -46,6 +46,7 @@ FileConversionApi/
 - ASP.NET Core Rate Limiting (built-in .NET 7+ middleware)
 - Serilog for logging (NOT Microsoft.Extensions.Logging config)
 - prometheus-net for Prometheus metrics
+- OpenTelemetry for distributed tracing
 - Sentry for error tracking
 - Swagger/OpenAPI documentation
 - StyleCop.Analyzers for code style
@@ -1574,6 +1575,13 @@ finally
   "Serilog": { ... },
   "Sentry": {
     "Dsn": ""
+  },
+  "OpenTelemetry": {
+    "EnableTracing": true,
+    "ServiceName": "FileConversionApi",
+    "OtlpEndpoint": "http://localhost:4317",
+    "ExportToConsole": false,
+    "SamplingRatio": 1.0
   }
 }
 ```
@@ -1630,6 +1638,7 @@ The task is COMPLETE when ALL of the following are true:
 26. ✅ Batch conversions work (multiple files in single request)
 27. ✅ Admin API for user management and statistics
 28. ✅ Conversion templates CRUD for saving/reusing settings
+29. ✅ OpenTelemetry tracing for distributed tracing and observability
 
 ---
 
