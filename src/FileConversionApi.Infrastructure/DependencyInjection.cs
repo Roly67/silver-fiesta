@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IConversionJobRepository, ConversionJobRepository>();
         services.AddScoped<IConversionTemplateRepository, ConversionTemplateRepository>();
         services.AddScoped<IUsageQuotaRepository, UsageQuotaRepository>();
+        services.AddScoped<IUserRateLimitSettingsRepository, UserRateLimitSettingsRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Services
@@ -66,6 +67,7 @@ public static class DependencyInjection
         services.AddSingleton<IPdfManipulationService, PdfManipulationService>();
         services.AddSingleton<IInputValidationService, InputValidationService>();
         services.AddScoped<IUsageQuotaService, UsageQuotaService>();
+        services.AddScoped<IUserRateLimitService, UserRateLimitService>();
 
         // Converters
         services.AddSingleton<HtmlToPdfConverter>();

@@ -41,6 +41,11 @@ public class AppDbContext : DbContext
     /// </summary>
     public DbSet<UsageQuota> UsageQuotas => this.Set<UsageQuota>();
 
+    /// <summary>
+    /// Gets the user rate limit settings.
+    /// </summary>
+    public DbSet<UserRateLimitSettings> UserRateLimitSettings => this.Set<UserRateLimitSettings>();
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

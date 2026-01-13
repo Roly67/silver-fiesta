@@ -63,8 +63,8 @@ Receive HTTP callbacks when conversion jobs complete or fail. Configure per-requ
 </td>
 <td width="50%">
 
-### 🚦 Rate Limiting
-Built-in rate limiting with per-user and per-endpoint policies. Protects against abuse with configurable limits and proper 429 responses.
+### 🚦 Per-User Rate Limiting
+Tiered rate limiting with Free, Basic, Premium, and Unlimited tiers. Admins can configure per-user limits, set custom overrides, and exempt admin users entirely.
 
 </td>
 </tr>
@@ -900,6 +900,31 @@ Response:
 <td><code>/api/v1/admin/users/{id}/quota</code></td>
 <td>Update user's quota limits</td>
 </tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/admin/users/{id}/rate-limits</code></td>
+<td>Get user's rate limit settings</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td><code>/api/v1/admin/users/{id}/rate-limits/tier</code></td>
+<td>Set user's rate limit tier</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td><code>/api/v1/admin/users/{id}/rate-limits/override/{policy}</code></td>
+<td>Set per-policy override</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/admin/users/{id}/rate-limits/overrides</code></td>
+<td>Clear all rate limit overrides</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/admin/rate-limits/tiers</code></td>
+<td>List available rate limit tiers</td>
+</tr>
 </table>
 
 <details>
@@ -1143,6 +1168,8 @@ tests/
 {
   "RateLimiting": {
     "EnableRateLimiting": true,
+    "ExemptAdmins": true,
+    "UserSettingsCacheSeconds": 300,
     "StandardPolicy": {
       "PermitLimit": 100,
       "WindowMinutes": 60
@@ -1154,18 +1181,52 @@ tests/
     "AuthPolicy": {
       "PermitLimit": 10,
       "WindowMinutes": 15
+    },
+    "Tiers": {
+      "Free": {
+        "StandardPolicy": { "PermitLimit": 100, "WindowMinutes": 60 },
+        "ConversionPolicy": { "PermitLimit": 20, "WindowMinutes": 60 }
+      },
+      "Basic": {
+        "StandardPolicy": { "PermitLimit": 500, "WindowMinutes": 60 },
+        "ConversionPolicy": { "PermitLimit": 100, "WindowMinutes": 60 }
+      },
+      "Premium": {
+        "StandardPolicy": { "PermitLimit": 2000, "WindowMinutes": 60 },
+        "ConversionPolicy": { "PermitLimit": 500, "WindowMinutes": 60 }
+      },
+      "Unlimited": {
+        "StandardPolicy": { "PermitLimit": 100000, "WindowMinutes": 60 },
+        "ConversionPolicy": { "PermitLimit": 10000, "WindowMinutes": 60 }
+      }
     }
   }
 }
 ```
 
-| Policy | Limit | Window | Endpoints |
-|--------|-------|--------|-----------|
-| `standard` | 100 requests | 1 hour | GET endpoints (status, download, history) |
-| `conversion` | 50 requests | 1 hour | POST conversion endpoints |
-| `auth` | 10 requests | 15 min | Authentication endpoints |
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `ExemptAdmins` | true | Admin users bypass all rate limits |
+| `UserSettingsCacheSeconds` | 300 | Cache duration for per-user settings |
 
-> **Note:** Rate limits are applied per-user for authenticated requests and per-IP for anonymous requests. When rate limited, the API returns HTTP 429 with a `Retry-After` header.
+**Rate Limit Tiers:**
+
+| Tier | Standard Policy | Conversion Policy |
+|------|-----------------|-------------------|
+| Free | 100 req/hr | 20 req/hr |
+| Basic | 500 req/hr | 100 req/hr |
+| Premium | 2000 req/hr | 500 req/hr |
+| Unlimited | 100000 req/hr | 10000 req/hr |
+
+**Policies:**
+
+| Policy | Endpoints | Notes |
+|--------|-----------|-------|
+| `standard` | GET endpoints | Per-user limits based on tier |
+| `conversion` | POST conversion | Per-user limits based on tier |
+| `auth` | Authentication | IP-based (not tier-based) |
+
+> **Note:** Users start with the Free tier by default. Admins can upgrade user tiers or set custom per-user overrides that supersede tier defaults. When rate limited, the API returns HTTP 429 with a `Retry-After` header.
 
 </details>
 
