@@ -277,6 +277,57 @@ public class ConvertController : ControllerBase
     }
 
     /// <summary>
+    /// Extracts text from a PDF document.
+    /// </summary>
+    /// <param name="request">The extraction request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The extraction job details.</returns>
+    /// <remarks>
+    /// Extracts text content from PDF using PdfPig library.
+    /// Output format is plain text (.txt file).
+    /// Supports password-protected PDFs and single page extraction.
+    /// </remarks>
+    /// <response code="202">Extraction job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("pdf-to-text")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ExtractPdfText(
+        [FromBody] ExtractPdfTextRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ExtractPdfTextCommand
+        {
+            PdfData = request.PdfData,
+            FileName = request.FileName,
+            PageNumber = request.PageNumber,
+            Password = request.Password,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Extraction Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
     /// Converts an image between formats.
     /// </summary>
     /// <param name="request">The conversion request.</param>

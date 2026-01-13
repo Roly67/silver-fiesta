@@ -219,6 +219,7 @@ Contains:
 - `POST /api/v1/convert/html-to-pdf` - Convert HTML to PDF (202 Accepted)
 - `POST /api/v1/convert/html-to-image` - Convert HTML/URL to image screenshot (202 Accepted)
 - `POST /api/v1/convert/pdf-to-image` - Convert PDF pages to image (202 Accepted)
+- `POST /api/v1/convert/pdf-to-text` - Extract text from PDF (202 Accepted)
 - `POST /api/v1/convert/markdown-to-pdf` - Convert Markdown to PDF (202 Accepted)
 - `POST /api/v1/convert/markdown-to-html` - Convert Markdown to HTML (202 Accepted)
 - `POST /api/v1/convert/image` - Convert image between formats (202 Accepted)
@@ -495,6 +496,53 @@ POST /api/v1/convert/pdf-to-image
 ```
 
 **Implementation:** Uses `PdfToImageConverter` class with PDFtoImage library (PDFium wrapper) and SkiaSharp for image encoding. Converters are registered for each supported output format (png, jpeg, webp).
+
+---
+
+### PDF Text Extraction
+
+Extract text content from PDF documents using PdfPig library.
+
+**Features:**
+- Extract text from all pages or a specific page
+- Password-protected PDF support
+- Preserves paragraph structure and word order
+- Multi-page PDFs include page separators
+
+**API Request Example:**
+
+All pages:
+```json
+POST /api/v1/convert/pdf-to-text
+{
+  "pdfData": "JVBERi0xLjQN...",
+  "fileName": "document.pdf"
+}
+```
+
+Single page with password:
+```json
+POST /api/v1/convert/pdf-to-text
+{
+  "pdfData": "JVBERi0xLjQN...",
+  "fileName": "document.pdf",
+  "pageNumber": 2,
+  "password": "secret123"
+}
+```
+
+**Request Parameters:**
+- `pdfData` (required) - Base64 encoded PDF content
+- `fileName` (optional) - Output file name (defaults to document_timestamp.pdf)
+- `pageNumber` (optional) - Specific page to extract (1-based). If null, extracts all pages
+- `password` (optional) - Password for encrypted PDFs
+- `webhookUrl` (optional) - URL to notify when extraction completes
+
+**Response:**
+- Returns a plain text (.txt) file with extracted content
+- Multi-page extractions include `--- Page N ---` separators
+
+**Implementation:** Uses `PdfTextExtractor` service with PdfPig library (Apache 2.0 licensed) for accurate text extraction.
 
 ---
 

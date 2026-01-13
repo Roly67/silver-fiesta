@@ -30,7 +30,7 @@
 <td width="50%">
 
 ### 🔄 Document Conversion
-Convert HTML, Markdown, or URLs to PDF. Convert Markdown to HTML. Convert DOCX (Word) and XLSX (Excel) to PDF using LibreOffice. Capture HTML pages or URLs as PNG, JPEG, or WebP screenshots. Render PDF pages to PNG, JPEG, or WebP images. Transform images between PNG, JPEG, and WebP formats with resize and quality options.
+Convert HTML, Markdown, or URLs to PDF. Convert Markdown to HTML. Convert DOCX (Word) and XLSX (Excel) to PDF using LibreOffice. Capture HTML pages or URLs as PNG, JPEG, or WebP screenshots. Render PDF pages to PNG, JPEG, or WebP images. Extract text from PDF documents. Transform images between PNG, JPEG, and WebP formats with resize and quality options.
 
 </td>
 <td width="50%">
@@ -376,6 +376,11 @@ X-API-Key: your-api-key-here
 <td><code>POST</code></td>
 <td><code>/api/v1/convert/pdf-to-image</code></td>
 <td>Convert PDF pages to image (PNG, JPEG, WebP)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/convert/pdf-to-text</code></td>
+<td>Extract text from PDF documents</td>
 </tr>
 <tr>
 <td><code>POST</code></td>
@@ -778,6 +783,39 @@ Content-Type: application/json
 - Multi-page PDFs (without `pageNumber`) return a ZIP file containing all pages
 - Pages are named `page_0001.{format}`, `page_0002.{format}`, etc.
 - Uses PDFtoImage (PDFium) for high-quality rendering
+
+</details>
+
+<details>
+<summary><strong>Extract Text from PDF</strong></summary>
+
+Extract text content from PDF documents:
+
+```json
+POST /api/v1/convert/pdf-to-text
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "pdfData": "base64-encoded-pdf-data",
+  "fileName": "document.pdf",
+  "pageNumber": 1,
+  "password": "optional-password",
+  "webhookUrl": "https://example.com/webhooks/conversion"
+}
+```
+
+**Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `pageNumber` | int | null | Specific page to extract (1-based). If null, extracts from all pages |
+| `password` | string | null | Password for encrypted PDFs |
+
+**Notes:**
+- Returns a plain text (.txt) file with the extracted content
+- Multi-page PDFs include page separators (`--- Page N ---`)
+- Uses PdfPig library for accurate text extraction
+- Preserves paragraph structure and word order
 
 </details>
 
