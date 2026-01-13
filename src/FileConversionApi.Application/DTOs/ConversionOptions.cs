@@ -75,7 +75,42 @@ public class ConversionOptions
     public int? ImageQuality { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether to capture the full scrollable page (for HTML to image).
+    /// </summary>
+    public bool FullPage { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the viewport width in pixels (for HTML to image).
+    /// </summary>
+    public int ViewportWidth { get; set; } = 1920;
+
+    /// <summary>
+    /// Gets or sets the viewport height in pixels (for HTML to image).
+    /// </summary>
+    public int ViewportHeight { get; set; } = 1080;
+
+    /// <summary>
     /// Gets or sets the watermark options for PDF output.
     /// </summary>
     public WatermarkOptions? Watermark { get; set; }
+
+    /// <summary>
+    /// Gets or sets the password protection options for PDF output.
+    /// </summary>
+    public PasswordProtectionOptions? PasswordProtection { get; set; }
+
+    /// <summary>
+    /// Gets or sets the DPI (dots per inch) for PDF to image rendering.
+    /// </summary>
+    public int Dpi { get; set; } = 150;
+
+    /// <summary>
+    /// Gets or sets the specific page number to convert (1-based). If null, all pages are converted.
+    /// </summary>
+    public int? PageNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the password for opening password-protected PDFs.
+    /// </summary>
+    public string? PdfPassword { get; set; }
 }

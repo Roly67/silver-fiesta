@@ -31,6 +31,21 @@ public class AppDbContext : DbContext
     /// </summary>
     public DbSet<ConversionJob> ConversionJobs => this.Set<ConversionJob>();
 
+    /// <summary>
+    /// Gets the conversion templates.
+    /// </summary>
+    public DbSet<ConversionTemplate> ConversionTemplates => this.Set<ConversionTemplate>();
+
+    /// <summary>
+    /// Gets the usage quotas.
+    /// </summary>
+    public DbSet<UsageQuota> UsageQuotas => this.Set<UsageQuota>();
+
+    /// <summary>
+    /// Gets the user rate limit settings.
+    /// </summary>
+    public DbSet<UserRateLimitSettings> UserRateLimitSettings => this.Set<UserRateLimitSettings>();
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -106,13 +106,13 @@ public class ConvertMarkdownToPdfCommandValidatorTests
     }
 
     /// <summary>
-    /// Tests that validation fails when Markdown content exceeds 10MB.
+    /// Tests that validation fails when Markdown content exceeds 5MB.
     /// </summary>
     [Fact]
-    public void Validate_WhenMarkdownExceeds10MB_ShouldHaveValidationError()
+    public void Validate_WhenMarkdownExceeds5MB_ShouldHaveValidationError()
     {
         // Arrange
-        var largeContent = new string('x', (10 * 1024 * 1024) + 1); // 10MB + 1 byte
+        var largeContent = new string('x', (5 * 1024 * 1024) + 1); // 5MB + 1 byte
         var command = new ConvertMarkdownToPdfCommand
         {
             Markdown = largeContent,
@@ -123,17 +123,17 @@ public class ConvertMarkdownToPdfCommandValidatorTests
 
         // Assert
         result.ShouldHaveValidationErrorFor(x => x.Markdown)
-            .WithErrorMessage("Markdown content must not exceed 10MB.");
+            .WithErrorMessage("Markdown content must not exceed 5MB.");
     }
 
     /// <summary>
-    /// Tests that validation succeeds when Markdown content is exactly 10MB.
+    /// Tests that validation succeeds when Markdown content is exactly 5MB.
     /// </summary>
     [Fact]
-    public void Validate_WhenMarkdownIsExactly10MB_ShouldNotHaveValidationError()
+    public void Validate_WhenMarkdownIsExactly5MB_ShouldNotHaveValidationError()
     {
         // Arrange
-        var exactContent = new string('x', 10 * 1024 * 1024); // Exactly 10MB
+        var exactContent = new string('x', 5 * 1024 * 1024); // Exactly 5MB
         var command = new ConvertMarkdownToPdfCommand
         {
             Markdown = exactContent,

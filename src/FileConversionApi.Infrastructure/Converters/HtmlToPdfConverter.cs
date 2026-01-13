@@ -21,6 +21,7 @@ public class HtmlToPdfConverter : IFileConverter, IAsyncDisposable
 {
     private readonly PuppeteerSettings settings;
     private readonly IPdfWatermarkService watermarkService;
+    private readonly IPdfEncryptionService encryptionService;
     private readonly ILogger<HtmlToPdfConverter> logger;
     private IBrowser? browser;
     private bool disposed;
@@ -30,14 +31,17 @@ public class HtmlToPdfConverter : IFileConverter, IAsyncDisposable
     /// </summary>
     /// <param name="settings">The Puppeteer settings.</param>
     /// <param name="watermarkService">The PDF watermark service.</param>
+    /// <param name="encryptionService">The PDF encryption service.</param>
     /// <param name="logger">The logger.</param>
     public HtmlToPdfConverter(
         IOptions<PuppeteerSettings> settings,
         IPdfWatermarkService watermarkService,
+        IPdfEncryptionService encryptionService,
         ILogger<HtmlToPdfConverter> logger)
     {
         this.settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
         this.watermarkService = watermarkService ?? throw new ArgumentNullException(nameof(watermarkService));
+        this.encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -132,6 +136,23 @@ public class HtmlToPdfConverter : IFileConverter, IAsyncDisposable
 
                 pdfBytes = watermarkResult.Value;
                 this.logger.LogDebug("Watermark applied, new size: {Size} bytes", pdfBytes.Length);
+            }
+
+            // Apply password protection if specified
+            if (options.PasswordProtection is not null && !string.IsNullOrWhiteSpace(options.PasswordProtection.UserPassword))
+            {
+                this.logger.LogDebug("Applying password protection to PDF");
+                var encryptionResult = await this.encryptionService
+                    .EncryptAsync(pdfBytes, options.PasswordProtection, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (encryptionResult.IsFailure)
+                {
+                    return encryptionResult.Error;
+                }
+
+                pdfBytes = encryptionResult.Value;
+                this.logger.LogDebug("Password protection applied, new size: {Size} bytes", pdfBytes.Length);
             }
 
             return pdfBytes;

@@ -86,6 +86,16 @@ public class ConversionJob
     public string? WebhookUrl { get; private set; }
 
     /// <summary>
+    /// Gets the storage location for the output data.
+    /// </summary>
+    public StorageLocation StorageLocation { get; private set; } = StorageLocation.Database;
+
+    /// <summary>
+    /// Gets the cloud storage key when output is stored in cloud storage.
+    /// </summary>
+    public string? CloudStorageKey { get; private set; }
+
+    /// <summary>
     /// Creates a new conversion job.
     /// </summary>
     /// <param name="userId">The user identifier.</param>
@@ -123,7 +133,7 @@ public class ConversionJob
     }
 
     /// <summary>
-    /// Marks the job as completed with the output data.
+    /// Marks the job as completed with the output data stored in the database.
     /// </summary>
     /// <param name="outputFileName">The output file name.</param>
     /// <param name="outputData">The output data.</param>
@@ -132,6 +142,23 @@ public class ConversionJob
         this.Status = ConversionStatus.Completed;
         this.OutputFileName = outputFileName;
         this.OutputData = outputData;
+        this.StorageLocation = StorageLocation.Database;
+        this.CloudStorageKey = null;
+        this.CompletedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Marks the job as completed with the output data stored in cloud storage.
+    /// </summary>
+    /// <param name="outputFileName">The output file name.</param>
+    /// <param name="cloudStorageKey">The cloud storage key.</param>
+    public void MarkAsCompletedWithCloudStorage(string outputFileName, string cloudStorageKey)
+    {
+        this.Status = ConversionStatus.Completed;
+        this.OutputFileName = outputFileName;
+        this.OutputData = null;
+        this.StorageLocation = StorageLocation.CloudStorage;
+        this.CloudStorageKey = cloudStorageKey;
         this.CompletedAt = DateTimeOffset.UtcNow;
     }
 

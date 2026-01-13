@@ -11,7 +11,7 @@ namespace FileConversionApi.Application.Commands.Conversion;
 /// <summary>
 /// Command to convert Markdown to PDF.
 /// </summary>
-public record ConvertMarkdownToPdfCommand : IRequest<Result<ConversionJobDto>>
+public record ConvertMarkdownToPdfCommand : IRequest<Result<ConversionJobDto>>, IConversionCommand
 {
     /// <summary>
     /// Gets the Markdown content to convert.

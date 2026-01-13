@@ -367,7 +367,7 @@
     <section class="hero">
         <div class="container">
             <h2>File Conversion API</h2>
-            <p>Production-ready .NET 10 REST API for converting documents and images. HTML/Markdown to PDF, Markdown to HTML, and image format conversions with enterprise-grade authentication, webhooks, and monitoring.</p>
+            <p>Production-ready .NET 10 REST API for converting documents and images. HTML/Markdown to PDF, Markdown to HTML, image format conversions, PDF watermarking, password protection, and merge/split with enterprise-grade authentication, webhooks, and monitoring.</p>
 
             <div class="badges">
                 <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat&logo=dotnet" alt=".NET 10">
@@ -405,9 +405,29 @@
                     <p>HTML/Markdown to PDF, Markdown to HTML using PuppeteerSharp and Markdig with customizable options.</p>
                 </div>
                 <div class="feature-card">
+                    <div class="feature-icon">&#128462;</div>
+                    <h4>Office Documents</h4>
+                    <p>Convert DOCX and XLSX to PDF using LibreOffice headless mode with watermark and encryption support.</p>
+                </div>
+                <div class="feature-card">
                     <div class="feature-icon">&#128247;</div>
                     <h4>Image Conversions</h4>
                     <p>Convert between PNG, JPEG, WebP, GIF, BMP formats with resize and quality options using ImageSharp.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128248;</div>
+                    <h4>HTML Screenshots</h4>
+                    <p>Capture HTML pages or URLs as PNG, JPEG, or WebP screenshots with configurable viewport and full-page capture.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128444;</div>
+                    <h4>PDF to Image</h4>
+                    <p>Render PDF pages to PNG, JPEG, or WebP with configurable DPI, single page or all pages, and password support.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128196;</div>
+                    <h4>PDF Text Extraction</h4>
+                    <p>Extract text content from PDF documents with support for specific pages and password-protected files.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">&#9889;</div>
@@ -443,6 +463,66 @@
                     <div class="feature-icon">&#129657;</div>
                     <h4>Enhanced Health Checks</h4>
                     <p>Detailed /health endpoint reporting database, Chromium, and disk space status.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128167;</div>
+                    <h4>PDF Watermarking</h4>
+                    <p>Add text watermarks to PDFs with customizable font, color, opacity, rotation, and positioning.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128272;</div>
+                    <h4>PDF Security</h4>
+                    <p>Password protection with user/owner passwords and granular permission controls for printing, copying, and editing.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128466;</div>
+                    <h4>PDF Merge & Split</h4>
+                    <p>Combine multiple PDFs into one or split PDFs by page ranges into separate files.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128230;</div>
+                    <h4>Batch Conversions</h4>
+                    <p>Process up to 20 conversion requests in a single API call with partial success support.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128081;</div>
+                    <h4>Admin API</h4>
+                    <p>Role-based admin endpoints for user management, job statistics, and system monitoring.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128221;</div>
+                    <h4>Conversion Templates</h4>
+                    <p>Save and reuse conversion settings including page sizes, margins, and watermarks.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128301;</div>
+                    <h4>OpenTelemetry Tracing</h4>
+                    <p>Distributed tracing for end-to-end request visibility. Export to Jaeger, Zipkin, or OTLP backends.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128737;</div>
+                    <h4>Input Validation</h4>
+                    <p>Configurable file size limits, URL allowlist/blocklist for SSRF protection, and content type validation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128100;</div>
+                    <h4>Admin Seeding</h4>
+                    <p>Automatic admin user creation on startup for initial setup. Configurable credentials with production-safe defaults.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128202;</div>
+                    <h4>Usage Quotas</h4>
+                    <p>Per-user monthly limits on conversions and bytes processed. Automatic reset each month with admin exemption support.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128679;</div>
+                    <h4>Per-User Rate Limiting</h4>
+                    <p>Tiered rate limits (Free, Basic, Premium, Unlimited) with admin-configurable per-user overrides and admin exemption.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9729;</div>
+                    <h4>Cloud Storage</h4>
+                    <p>Store conversion outputs in S3-compatible storage (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2). Backward compatible with database storage.</p>
                 </div>
             </div>
         </div>
@@ -512,6 +592,62 @@
                 </div>
                 <div class="endpoint">
                     <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/html-to-image</span>
+                        <span class="endpoint-desc">Convert HTML/URL to image (PNG, JPEG, WebP)</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/pdf-to-image</span>
+                        <span class="endpoint-desc">Convert PDF pages to image (PNG, JPEG, WebP)</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/pdf-to-text</span>
+                        <span class="endpoint-desc">Extract text from PDF documents</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/docx-to-pdf</span>
+                        <span class="endpoint-desc">Convert DOCX to PDF</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/xlsx-to-pdf</span>
+                        <span class="endpoint-desc">Convert XLSX to PDF</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/pdf/merge</span>
+                        <span class="endpoint-desc">Merge multiple PDFs into one</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/pdf/split</span>
+                        <span class="endpoint-desc">Split PDF into multiple files</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/convert/batch</span>
+                        <span class="endpoint-desc">Batch convert multiple files</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
                         <span class="method method-get">GET</span>
                         <span class="endpoint-path">/api/v1/convert/{jobId}</span>
                         <span class="endpoint-desc">Get conversion job status</span>
@@ -547,6 +683,123 @@
                         <span class="method method-get">GET</span>
                         <span class="endpoint-path">/metrics</span>
                         <span class="endpoint-desc">Prometheus metrics endpoint</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h4>Admin (requires Admin role)</h4>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/admin/users</span>
+                        <span class="endpoint-desc">List all users (paginated)</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}</span>
+                        <span class="endpoint-desc">Get user details</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/disable</span>
+                        <span class="endpoint-desc">Disable a user</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/enable</span>
+                        <span class="endpoint-desc">Enable a user</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/reset-api-key</span>
+                        <span class="endpoint-desc">Reset user's API key</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/admin/stats</span>
+                        <span class="endpoint-desc">Get job statistics</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/quota</span>
+                        <span class="endpoint-desc">Get user's quota</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/quota/history</span>
+                        <span class="endpoint-desc">Get user's quota history</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-put">PUT</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/quota</span>
+                        <span class="endpoint-desc">Update user's quota limits</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h4>Quota</h4>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/quota</span>
+                        <span class="endpoint-desc">Get current user's usage quota</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h4>Templates</h4>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/templates</span>
+                        <span class="endpoint-desc">List user's conversion templates</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/templates/{id}</span>
+                        <span class="endpoint-desc">Get template by ID</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/templates</span>
+                        <span class="endpoint-desc">Create a new template</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-put">PUT</span>
+                        <span class="endpoint-path">/api/v1/templates/{id}</span>
+                        <span class="endpoint-desc">Update a template</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-delete">DELETE</span>
+                        <span class="endpoint-path">/api/v1/templates/{id}</span>
+                        <span class="endpoint-desc">Delete a template</span>
                     </div>
                 </div>
             </div>
