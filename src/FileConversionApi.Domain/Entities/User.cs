@@ -52,6 +52,11 @@ public class User
     public bool IsActive { get; private set; }
 
     /// <summary>
+    /// Gets a value indicating whether the user is an administrator.
+    /// </summary>
+    public bool IsAdmin { get; private set; }
+
+    /// <summary>
     /// Gets the conversion jobs for this user.
     /// </summary>
     public IReadOnlyList<ConversionJob> ConversionJobs => this.conversionJobs.AsReadOnly();
@@ -108,6 +113,22 @@ public class User
     public void Activate()
     {
         this.IsActive = true;
+    }
+
+    /// <summary>
+    /// Grants administrator privileges to the user.
+    /// </summary>
+    public void GrantAdmin()
+    {
+        this.IsAdmin = true;
+    }
+
+    /// <summary>
+    /// Revokes administrator privileges from the user.
+    /// </summary>
+    public void RevokeAdmin()
+    {
+        this.IsAdmin = false;
     }
 
     private static string GenerateApiKey()

@@ -78,7 +78,10 @@ try
     })
     .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>("ApiKey", null);
 
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+    });
 
     // Configure Rate Limiting
     builder.Services.Configure<RateLimitingSettings>(

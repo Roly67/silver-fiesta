@@ -64,4 +64,18 @@ public interface IConversionJobRepository
     /// </summary>
     /// <param name="job">The conversion job to update.</param>
     void Update(ConversionJob job);
+
+    /// <summary>
+    /// Gets job statistics for all users.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A tuple containing total, completed, failed, and pending job counts.</returns>
+    Task<(int Total, int Completed, int Failed, int Pending)> GetStatisticsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets the total count of all conversion jobs.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The total count.</returns>
+    Task<int> GetTotalCountAsync(CancellationToken cancellationToken);
 }

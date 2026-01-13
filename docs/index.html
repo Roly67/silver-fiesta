@@ -464,6 +464,11 @@
                     <h4>Batch Conversions</h4>
                     <p>Process up to 20 conversion requests in a single API call with partial success support.</p>
                 </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128081;</div>
+                    <h4>Admin API</h4>
+                    <p>Role-based admin endpoints for user management, job statistics, and system monitoring.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -588,6 +593,52 @@
                         <span class="method method-get">GET</span>
                         <span class="endpoint-path">/metrics</span>
                         <span class="endpoint-desc">Prometheus metrics endpoint</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h4>Admin (requires Admin role)</h4>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/admin/users</span>
+                        <span class="endpoint-desc">List all users (paginated)</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}</span>
+                        <span class="endpoint-desc">Get user details</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/disable</span>
+                        <span class="endpoint-desc">Disable a user</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/enable</span>
+                        <span class="endpoint-desc">Enable a user</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-post">POST</span>
+                        <span class="endpoint-path">/api/v1/admin/users/{id}/reset-api-key</span>
+                        <span class="endpoint-desc">Reset user's API key</span>
+                    </div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method method-get">GET</span>
+                        <span class="endpoint-path">/api/v1/admin/stats</span>
+                        <span class="endpoint-desc">Get job statistics</span>
                     </div>
                 </div>
             </div>

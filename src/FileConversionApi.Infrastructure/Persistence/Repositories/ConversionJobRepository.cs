@@ -4,6 +4,7 @@
 
 using FileConversionApi.Application.Interfaces;
 using FileConversionApi.Domain.Entities;
+using FileConversionApi.Domain.Enums;
 using FileConversionApi.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
@@ -78,5 +79,35 @@ public class ConversionJobRepository : IConversionJobRepository
     public void Update(ConversionJob job)
     {
         this.context.ConversionJobs.Update(job);
+    }
+
+    /// <inheritdoc/>
+    public async Task<(int Total, int Completed, int Failed, int Pending)> GetStatisticsAsync(CancellationToken cancellationToken)
+    {
+        var total = await this.context.ConversionJobs
+            .CountAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var completed = await this.context.ConversionJobs
+            .CountAsync(j => j.Status == ConversionStatus.Completed, cancellationToken)
+            .ConfigureAwait(false);
+
+        var failed = await this.context.ConversionJobs
+            .CountAsync(j => j.Status == ConversionStatus.Failed, cancellationToken)
+            .ConfigureAwait(false);
+
+        var pending = await this.context.ConversionJobs
+            .CountAsync(j => j.Status == ConversionStatus.Pending || j.Status == ConversionStatus.Processing, cancellationToken)
+            .ConfigureAwait(false);
+
+        return (total, completed, failed, pending);
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> GetTotalCountAsync(CancellationToken cancellationToken)
+    {
+        return await this.context.ConversionJobs
+            .CountAsync(cancellationToken)
+            .ConfigureAwait(false);
     }
 }
