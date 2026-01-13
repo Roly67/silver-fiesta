@@ -1158,6 +1158,31 @@ tests/
 </details>
 
 <details>
+<summary><strong>Admin Seed Settings</strong></summary>
+
+```json
+{
+  "AdminSeed": {
+    "Enabled": true,
+    "Email": "admin@fileconversionapi.local",
+    "Password": "Admin123!",
+    "SkipIfAdminExists": true
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Enabled` | true | Enable/disable admin seeding on startup |
+| `Email` | admin@fileconversionapi.local | Default admin email address |
+| `Password` | Admin123! | Default admin password (**change in production!**) |
+| `SkipIfAdminExists` | true | Skip seeding if any admin user already exists |
+
+> **Security Note:** Change the default password in production using environment variables: `AdminSeed__Password`. Disable admin seeding after initial setup by setting `Enabled: false`.
+
+</details>
+
+<details>
 <summary><strong>Input Validation Settings</strong></summary>
 
 ```json

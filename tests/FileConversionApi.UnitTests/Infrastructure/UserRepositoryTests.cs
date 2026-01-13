@@ -229,6 +229,59 @@ public class UserRepositoryTests : IDisposable
         updatedUser.Should().NotBeNull();
     }
 
+    /// <summary>
+    /// Tests that AnyAdminExistsAsync returns true when admin user exists.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task AnyAdminExistsAsync_WhenAdminExists_ReturnsTrue()
+    {
+        // Arrange
+        var user = User.Create("admin@example.com", "hashedPassword");
+        user.GrantAdmin();
+        await this.context.Users.AddAsync(user);
+        await this.context.SaveChangesAsync();
+
+        // Act
+        var result = await this.repository.AnyAdminExistsAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Tests that AnyAdminExistsAsync returns false when no admin user exists.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task AnyAdminExistsAsync_WhenNoAdminExists_ReturnsFalse()
+    {
+        // Arrange
+        var user = User.Create("regular@example.com", "hashedPassword");
+        await this.context.Users.AddAsync(user);
+        await this.context.SaveChangesAsync();
+
+        // Act
+        var result = await this.repository.AnyAdminExistsAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Tests that AnyAdminExistsAsync returns false when no users exist.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task AnyAdminExistsAsync_WhenNoUsersExist_ReturnsFalse()
+    {
+        // Act
+        var result = await this.repository.AnyAdminExistsAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
     /// <inheritdoc/>
     public void Dispose()
     {

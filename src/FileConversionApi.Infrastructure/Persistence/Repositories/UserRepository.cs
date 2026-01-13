@@ -89,4 +89,12 @@ public class UserRepository : IUserRepository
     {
         return await this.context.Users.CountAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    /// <inheritdoc/>
+    public async Task<bool> AnyAdminExistsAsync(CancellationToken cancellationToken)
+    {
+        return await this.context.Users
+            .AnyAsync(u => u.IsAdmin, cancellationToken)
+            .ConfigureAwait(false);
+    }
 }
