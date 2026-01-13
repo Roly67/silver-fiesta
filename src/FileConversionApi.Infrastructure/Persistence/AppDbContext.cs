@@ -31,6 +31,11 @@ public class AppDbContext : DbContext
     /// </summary>
     public DbSet<ConversionJob> ConversionJobs => this.Set<ConversionJob>();
 
+    /// <summary>
+    /// Gets the conversion templates.
+    /// </summary>
+    public DbSet<ConversionTemplate> ConversionTemplates => this.Set<ConversionTemplate>();
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
