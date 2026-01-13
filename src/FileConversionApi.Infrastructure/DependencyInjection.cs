@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.Configure<JobCleanupSettings>(configuration.GetSection(JobCleanupSettings.SectionName));
         services.Configure<HealthCheckSettings>(configuration.GetSection(HealthCheckSettings.SectionName));
         services.Configure<MetricsSettings>(configuration.GetSection(MetricsSettings.SectionName));
+        services.Configure<InputValidationSettings>(configuration.GetSection(InputValidationSettings.SectionName));
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -59,6 +60,7 @@ public static class DependencyInjection
         services.AddSingleton<IPdfWatermarkService, PdfWatermarkService>();
         services.AddSingleton<IPdfEncryptionService, PdfEncryptionService>();
         services.AddSingleton<IPdfManipulationService, PdfManipulationService>();
+        services.AddSingleton<IInputValidationService, InputValidationService>();
 
         // Converters
         services.AddSingleton<HtmlToPdfConverter>();
