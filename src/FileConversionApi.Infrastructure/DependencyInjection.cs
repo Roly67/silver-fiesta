@@ -39,6 +39,7 @@ public static class DependencyInjection
         // Options
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.Configure<PuppeteerSettings>(configuration.GetSection(PuppeteerSettings.SectionName));
+        services.Configure<LibreOfficeSettings>(configuration.GetSection(LibreOfficeSettings.SectionName));
         services.Configure<WebhookSettings>(configuration.GetSection(WebhookSettings.SectionName));
         services.Configure<JobCleanupSettings>(configuration.GetSection(JobCleanupSettings.SectionName));
         services.Configure<HealthCheckSettings>(configuration.GetSection(HealthCheckSettings.SectionName));
@@ -68,12 +69,17 @@ public static class DependencyInjection
         services.AddSingleton<IInputValidationService, InputValidationService>();
         services.AddScoped<IUsageQuotaService, UsageQuotaService>();
         services.AddScoped<IUserRateLimitService, UserRateLimitService>();
+        services.AddSingleton<ILibreOfficeService, LibreOfficeService>();
 
         // Converters
         services.AddSingleton<HtmlToPdfConverter>();
         services.AddSingleton<IFileConverter>(sp => sp.GetRequiredService<HtmlToPdfConverter>());
         services.AddSingleton<IFileConverter, MarkdownToPdfConverter>();
         services.AddSingleton<IFileConverter, MarkdownToHtmlConverter>();
+
+        // Office converters
+        services.AddSingleton<IFileConverter, DocxToPdfConverter>();
+        services.AddSingleton<IFileConverter, XlsxToPdfConverter>();
 
         // Image converters
         services.AddSingleton<IFileConverter, PngToJpegConverter>();
