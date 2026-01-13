@@ -36,6 +36,11 @@ public class AppDbContext : DbContext
     /// </summary>
     public DbSet<ConversionTemplate> ConversionTemplates => this.Set<ConversionTemplate>();
 
+    /// <summary>
+    /// Gets the usage quotas.
+    /// </summary>
+    public DbSet<UsageQuota> UsageQuotas => this.Set<UsageQuota>();
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

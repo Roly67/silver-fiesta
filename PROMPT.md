@@ -235,6 +235,9 @@ Contains:
 - `PUT /api/v1/templates/{id}` - Update template
 - `DELETE /api/v1/templates/{id}` - Delete template
 
+### Usage Quotas
+- `GET /api/v1/quota` - Get current user's quota (200 OK)
+
 ### Admin (requires Admin role)
 - `GET /api/v1/admin/users` - List all users (paginated)
 - `GET /api/v1/admin/users/{id}` - Get user details
@@ -243,6 +246,9 @@ Contains:
 - `POST /api/v1/admin/users/{id}/reset-api-key` - Reset user's API key
 - `POST /api/v1/admin/users/{id}/grant-admin` - Grant admin privileges
 - `POST /api/v1/admin/users/{id}/revoke-admin` - Revoke admin privileges
+- `GET /api/v1/admin/users/{id}/quota` - Get user's current quota
+- `GET /api/v1/admin/users/{id}/quota/history` - Get user's quota history
+- `PUT /api/v1/admin/users/{id}/quota` - Update user's quota limits
 - `GET /api/v1/admin/stats` - Get job statistics
 
 ---

@@ -11,7 +11,7 @@ namespace FileConversionApi.Application.Commands.Conversion;
 /// <summary>
 /// Command to convert HTML to PDF.
 /// </summary>
-public record ConvertHtmlToPdfCommand : IRequest<Result<ConversionJobDto>>
+public record ConvertHtmlToPdfCommand : IRequest<Result<ConversionJobDto>>, IConversionCommand
 {
     /// <summary>
     /// Gets the HTML content to convert.

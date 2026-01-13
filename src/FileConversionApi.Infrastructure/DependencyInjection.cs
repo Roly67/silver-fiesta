@@ -45,11 +45,13 @@ public static class DependencyInjection
         services.Configure<MetricsSettings>(configuration.GetSection(MetricsSettings.SectionName));
         services.Configure<InputValidationSettings>(configuration.GetSection(InputValidationSettings.SectionName));
         services.Configure<AdminSeedSettings>(configuration.GetSection(AdminSeedSettings.SectionName));
+        services.Configure<UsageQuotaSettings>(configuration.GetSection(UsageQuotaSettings.SectionName));
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IConversionJobRepository, ConversionJobRepository>();
         services.AddScoped<IConversionTemplateRepository, ConversionTemplateRepository>();
+        services.AddScoped<IUsageQuotaRepository, UsageQuotaRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Services
@@ -63,6 +65,7 @@ public static class DependencyInjection
         services.AddSingleton<IPdfEncryptionService, PdfEncryptionService>();
         services.AddSingleton<IPdfManipulationService, PdfManipulationService>();
         services.AddSingleton<IInputValidationService, InputValidationService>();
+        services.AddScoped<IUsageQuotaService, UsageQuotaService>();
 
         // Converters
         services.AddSingleton<HtmlToPdfConverter>();

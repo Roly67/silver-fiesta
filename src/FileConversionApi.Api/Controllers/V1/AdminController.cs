@@ -3,8 +3,10 @@
 // </copyright>
 
 using FileConversionApi.Application.Commands.Admin;
+using FileConversionApi.Application.Commands.Quota;
 using FileConversionApi.Application.DTOs;
 using FileConversionApi.Application.Queries.Admin;
+using FileConversionApi.Application.Queries.Quota;
 
 using MediatR;
 
@@ -245,5 +247,99 @@ public class AdminController : ControllerBase
         return result.IsSuccess
             ? this.Ok(result.Value)
             : this.BadRequest(new { error = result.Error.Code, message = result.Error.Message });
+    }
+
+    /// <summary>
+    /// Gets a user's current quota.
+    /// </summary>
+    /// <param name="userId">The user identifier.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The user's quota information.</returns>
+    [HttpGet("users/{userId:guid}/quota")]
+    [ProducesResponseType(typeof(UsageQuotaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetUserQuota(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetUserQuotaQuery { UserId = userId };
+        var result = await this.mediator.Send(query, cancellationToken).ConfigureAwait(false);
+
+        if (result.IsFailure)
+        {
+            return result.Error.Code == "Admin.UserNotFound"
+                ? this.NotFound(new { error = result.Error.Code, message = result.Error.Message })
+                : this.BadRequest(new { error = result.Error.Code, message = result.Error.Message });
+        }
+
+        return this.Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Gets a user's quota history.
+    /// </summary>
+    /// <param name="userId">The user identifier.</param>
+    /// <param name="months">The number of months to retrieve (default 12).</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The user's quota history.</returns>
+    [HttpGet("users/{userId:guid}/quota/history")]
+    [ProducesResponseType(typeof(IReadOnlyList<UsageQuotaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetUserQuotaHistory(
+        Guid userId,
+        [FromQuery] int months = 12,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetUserQuotaHistoryQuery { UserId = userId, Months = months };
+        var result = await this.mediator.Send(query, cancellationToken).ConfigureAwait(false);
+
+        if (result.IsFailure)
+        {
+            return result.Error.Code == "Admin.UserNotFound"
+                ? this.NotFound(new { error = result.Error.Code, message = result.Error.Message })
+                : this.BadRequest(new { error = result.Error.Code, message = result.Error.Message });
+        }
+
+        return this.Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Updates a user's quota limits.
+    /// </summary>
+    /// <param name="userId">The user identifier.</param>
+    /// <param name="request">The update request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The updated quota information.</returns>
+    [HttpPut("users/{userId:guid}/quota")]
+    [ProducesResponseType(typeof(UsageQuotaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateUserQuota(
+        Guid userId,
+        [FromBody] UpdateUserQuotaRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new UpdateUserQuotaCommand
+        {
+            UserId = userId,
+            ConversionsLimit = request.ConversionsLimit,
+            BytesLimit = request.BytesLimit,
+        };
+        var result = await this.mediator.Send(command, cancellationToken).ConfigureAwait(false);
+
+        if (result.IsFailure)
+        {
+            return result.Error.Code == "Admin.UserNotFound"
+                ? this.NotFound(new { error = result.Error.Code, message = result.Error.Message })
+                : this.BadRequest(new { error = result.Error.Code, message = result.Error.Message });
+        }
+
+        return this.Ok(result.Value);
     }
 }

@@ -12,7 +12,7 @@ namespace FileConversionApi.Application.Commands.Conversion;
 /// <summary>
 /// Command to process multiple conversions in a single batch.
 /// </summary>
-public record BatchConversionCommand : IRequest<Result<BatchConversionResult>>
+public record BatchConversionCommand : IRequest<Result<BatchConversionResult>>, IConversionCommand
 {
     /// <summary>
     /// Gets the conversion items in the batch.
