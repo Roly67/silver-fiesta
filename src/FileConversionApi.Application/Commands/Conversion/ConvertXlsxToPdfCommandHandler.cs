@@ -30,6 +30,7 @@ public class ConvertXlsxToPdfCommandHandler : IRequestHandler<ConvertXlsxToPdfCo
     private readonly ICurrentUserService currentUserService;
     private readonly IWebhookService webhookService;
     private readonly IMetricsService metricsService;
+    private readonly ICloudStorageService cloudStorageService;
     private readonly ILogger<ConvertXlsxToPdfCommandHandler> logger;
 
     /// <summary>
@@ -41,6 +42,7 @@ public class ConvertXlsxToPdfCommandHandler : IRequestHandler<ConvertXlsxToPdfCo
     /// <param name="currentUserService">The current user service.</param>
     /// <param name="webhookService">The webhook service.</param>
     /// <param name="metricsService">The metrics service.</param>
+    /// <param name="cloudStorageService">The cloud storage service.</param>
     /// <param name="logger">The logger.</param>
     public ConvertXlsxToPdfCommandHandler(
         IConversionJobRepository jobRepository,
@@ -49,6 +51,7 @@ public class ConvertXlsxToPdfCommandHandler : IRequestHandler<ConvertXlsxToPdfCo
         ICurrentUserService currentUserService,
         IWebhookService webhookService,
         IMetricsService metricsService,
+        ICloudStorageService cloudStorageService,
         ILogger<ConvertXlsxToPdfCommandHandler> logger)
     {
         this.jobRepository = jobRepository ?? throw new ArgumentNullException(nameof(jobRepository));
@@ -57,6 +60,7 @@ public class ConvertXlsxToPdfCommandHandler : IRequestHandler<ConvertXlsxToPdfCo
         this.currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         this.webhookService = webhookService ?? throw new ArgumentNullException(nameof(webhookService));
         this.metricsService = metricsService ?? throw new ArgumentNullException(nameof(metricsService));
+        this.cloudStorageService = cloudStorageService ?? throw new ArgumentNullException(nameof(cloudStorageService));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -129,7 +133,31 @@ public class ConvertXlsxToPdfCommandHandler : IRequestHandler<ConvertXlsxToPdfCo
             }
 
             var outputFileName = Path.ChangeExtension(inputFileName, ".pdf");
-            job.MarkAsCompleted(outputFileName, conversionResult.Value);
+
+            if (this.cloudStorageService.IsEnabled)
+            {
+                var storageKey = $"{userId.Value.Value}/{job.Id.Value}/{outputFileName}";
+                var uploadResult = await this.cloudStorageService
+                    .UploadAsync(conversionResult.Value, storageKey, "application/pdf", cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (uploadResult.IsFailure)
+                {
+                    stopwatch.Stop();
+                    this.metricsService.RecordConversionFailed(SourceFormat, TargetFormat);
+                    job.MarkAsFailed($"Cloud storage upload failed: {uploadResult.Error.Message}");
+                    await this.unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                    await this.webhookService.SendJobCompletedAsync(job, cancellationToken).ConfigureAwait(false);
+                    return uploadResult.Error;
+                }
+
+                job.MarkAsCompletedWithCloudStorage(outputFileName, storageKey);
+            }
+            else
+            {
+                job.MarkAsCompleted(outputFileName, conversionResult.Value);
+            }
+
             await this.unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await this.webhookService.SendJobCompletedAsync(job, cancellationToken).ConfigureAwait(false);
 

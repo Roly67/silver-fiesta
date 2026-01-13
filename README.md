@@ -161,6 +161,9 @@ Per-user monthly limits on conversions and bytes processed. Admins can view and 
 </td>
 <td width="50%">
 
+### ☁️ Cloud Storage
+Store conversion outputs in S3-compatible storage (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2). Backward compatible with database storage.
+
 </td>
 </tr>
 </table>
@@ -1486,6 +1489,48 @@ tests/
 | `AllowedImageContentTypes` | image/jpeg, image/png, image/gif, image/webp, image/bmp, image/tiff | Allowed MIME types for images |
 
 > **Security Note:** The default blocklist includes localhost, loopback addresses, private IP ranges (10.x, 172.16-31.x, 192.168.x), link-local addresses, and cloud metadata endpoints to protect against SSRF attacks.
+
+</details>
+
+<details>
+<summary><strong>Cloud Storage Settings</strong></summary>
+
+```json
+{
+  "CloudStorage": {
+    "Enabled": false,
+    "ServiceUrl": "https://s3.amazonaws.com",
+    "BucketName": "file-conversion-outputs",
+    "AccessKey": "",
+    "SecretKey": "",
+    "Region": "us-east-1",
+    "ForcePathStyle": false,
+    "PresignedUrlExpirationMinutes": 60
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Enabled` | false | Enable/disable cloud storage (false = use database) |
+| `ServiceUrl` | https://s3.amazonaws.com | S3 endpoint URL |
+| `BucketName` | file-conversion-outputs | Storage bucket name |
+| `AccessKey` | | AWS/S3 access key |
+| `SecretKey` | | AWS/S3 secret key |
+| `Region` | us-east-1 | AWS region |
+| `ForcePathStyle` | false | Use path-style URLs (required for MinIO) |
+| `PresignedUrlExpirationMinutes` | 60 | Presigned URL expiration time |
+
+**S3-Compatible Providers:**
+
+| Provider | ServiceUrl Example | ForcePathStyle |
+|----------|-------------------|----------------|
+| AWS S3 | https://s3.amazonaws.com | false |
+| MinIO | http://localhost:9000 | true |
+| DigitalOcean Spaces | https://nyc3.digitaloceanspaces.com | false |
+| Cloudflare R2 | https://account-id.r2.cloudflarestorage.com | false |
+
+> **Note:** When cloud storage is enabled, conversion outputs are stored in S3 instead of the database. Existing jobs with database storage continue to work (backward compatible). The job cleanup service automatically deletes cloud storage objects when jobs expire.
 
 </details>
 

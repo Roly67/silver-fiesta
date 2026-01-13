@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.Configure<InputValidationSettings>(configuration.GetSection(InputValidationSettings.SectionName));
         services.Configure<AdminSeedSettings>(configuration.GetSection(AdminSeedSettings.SectionName));
         services.Configure<UsageQuotaSettings>(configuration.GetSection(UsageQuotaSettings.SectionName));
+        services.Configure<CloudStorageSettings>(configuration.GetSection(CloudStorageSettings.SectionName));
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -70,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<IUsageQuotaService, UsageQuotaService>();
         services.AddScoped<IUserRateLimitService, UserRateLimitService>();
         services.AddSingleton<ILibreOfficeService, LibreOfficeService>();
+        services.AddSingleton<ICloudStorageService, CloudStorageService>();
 
         // Converters
         services.AddSingleton<HtmlToPdfConverter>();

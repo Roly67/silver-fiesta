@@ -2,6 +2,7 @@
 // FileConversionApi
 // </copyright>
 
+using FileConversionApi.Application.Interfaces;
 using FileConversionApi.Domain.Enums;
 using FileConversionApi.Infrastructure.Options;
 using FileConversionApi.Infrastructure.Persistence;
@@ -21,6 +22,7 @@ public class JobCleanupService : BackgroundService
 {
     private readonly IServiceScopeFactory scopeFactory;
     private readonly JobCleanupSettings settings;
+    private readonly ICloudStorageService cloudStorageService;
     private readonly ILogger<JobCleanupService> logger;
 
     /// <summary>
@@ -28,14 +30,17 @@ public class JobCleanupService : BackgroundService
     /// </summary>
     /// <param name="scopeFactory">The service scope factory.</param>
     /// <param name="settings">The job cleanup settings.</param>
+    /// <param name="cloudStorageService">The cloud storage service.</param>
     /// <param name="logger">The logger.</param>
     public JobCleanupService(
         IServiceScopeFactory scopeFactory,
         IOptions<JobCleanupSettings> settings,
+        ICloudStorageService cloudStorageService,
         ILogger<JobCleanupService> logger)
     {
         this.scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         this.settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
+        this.cloudStorageService = cloudStorageService ?? throw new ArgumentNullException(nameof(cloudStorageService));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -61,6 +66,27 @@ public class JobCleanupService : BackgroundService
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // Delete cloud storage objects for completed jobs
+        var cloudStorageDeletedCount = 0;
+        foreach (var job in expiredCompletedJobs.Where(j => j.StorageLocation == StorageLocation.CloudStorage && !string.IsNullOrEmpty(j.CloudStorageKey)))
+        {
+            var deleteResult = await this.cloudStorageService
+                .DeleteAsync(job.CloudStorageKey!, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (deleteResult.IsFailure)
+            {
+                this.logger.LogWarning(
+                    "Failed to delete cloud storage object for job {JobId}: {Error}",
+                    job.Id,
+                    deleteResult.Error.Message);
+            }
+            else
+            {
+                cloudStorageDeletedCount++;
+            }
+        }
+
         dbContext.ConversionJobs.RemoveRange(expiredCompletedJobs);
 
         // Find and delete expired failed jobs
@@ -82,9 +108,10 @@ public class JobCleanupService : BackgroundService
         if (completedDeleted > 0 || failedDeleted > 0)
         {
             this.logger.LogInformation(
-                "Job cleanup completed: {CompletedDeleted} completed jobs, {FailedDeleted} failed jobs deleted",
+                "Job cleanup completed: {CompletedDeleted} completed jobs, {FailedDeleted} failed jobs deleted, {CloudStorageDeleted} cloud storage objects deleted",
                 completedDeleted,
-                failedDeleted);
+                failedDeleted,
+                cloudStorageDeletedCount);
         }
         else
         {

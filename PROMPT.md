@@ -188,6 +188,8 @@ Contains:
 - InputFileName (string, not null)
 - OutputFileName (string, nullable)
 - OutputData (byte[], nullable)
+- StorageLocation (int - enum: Database=0, CloudStorage=1)
+- CloudStorageKey (string, nullable, max 1024)
 - ErrorMessage (string, nullable)
 - CreatedAt (DateTimeOffset, not null)
 - CompletedAt (DateTimeOffset, nullable)
@@ -1066,6 +1068,160 @@ Unit tests should verify:
 
 ---
 
+## Cloud Storage Integration
+
+Store conversion outputs in S3-compatible storage instead of the PostgreSQL database for improved scalability and cost-effectiveness.
+
+### Strategy
+
+Use AWSSDK.S3 to upload conversion outputs to S3-compatible storage (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2). The feature is backward compatible - existing jobs with database storage continue to work when cloud storage is disabled.
+
+### Configuration
+
+```json
+{
+  "CloudStorage": {
+    "Enabled": false,
+    "ServiceUrl": "https://s3.amazonaws.com",
+    "BucketName": "file-conversion-outputs",
+    "AccessKey": "",
+    "SecretKey": "",
+    "Region": "us-east-1",
+    "ForcePathStyle": false,
+    "PresignedUrlExpirationMinutes": 60
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Enabled` | false | Enable/disable cloud storage (false = use database) |
+| `ServiceUrl` | https://s3.amazonaws.com | S3 endpoint URL |
+| `BucketName` | file-conversion-outputs | Storage bucket name |
+| `AccessKey` | | AWS/S3 access key |
+| `SecretKey` | | AWS/S3 secret key |
+| `Region` | us-east-1 | AWS region |
+| `ForcePathStyle` | false | Use path-style URLs (required for MinIO) |
+| `PresignedUrlExpirationMinutes` | 60 | Presigned URL expiration time |
+
+### S3-Compatible Providers
+
+| Provider | ServiceUrl Example | ForcePathStyle |
+|----------|-------------------|----------------|
+| AWS S3 | https://s3.amazonaws.com | false |
+| MinIO | http://localhost:9000 | true |
+| DigitalOcean Spaces | https://nyc3.digitaloceanspaces.com | false |
+| Cloudflare R2 | https://account-id.r2.cloudflarestorage.com | false |
+
+### Interface
+
+```csharp
+// Application/Interfaces/ICloudStorageService.cs
+public interface ICloudStorageService
+{
+    bool IsEnabled { get; }
+    Task<Result<string>> UploadAsync(byte[] data, string key, string contentType, CancellationToken ct);
+    Task<Result<byte[]>> DownloadAsync(string key, CancellationToken ct);
+    Task<Result> DeleteAsync(string key, CancellationToken ct);
+}
+```
+
+### Entity Changes
+
+The `ConversionJob` entity is extended with:
+- `StorageLocation` enum property (Database=0, CloudStorage=1)
+- `CloudStorageKey` string property for the S3 object key
+- `MarkAsCompletedWithCloudStorage(outputFileName, cloudStorageKey)` method
+
+### Command Handler Pattern
+
+```csharp
+// After successful conversion
+if (this.cloudStorageService.IsEnabled)
+{
+    var storageKey = $"{userId.Value.Value}/{job.Id.Value}/{outputFileName}";
+    var uploadResult = await this.cloudStorageService.UploadAsync(
+        conversionResult.Value, storageKey, contentType, cancellationToken);
+
+    if (uploadResult.IsFailure)
+    {
+        job.MarkAsFailed($"Cloud storage upload failed: {uploadResult.Error.Message}");
+        // ... save and return error
+    }
+
+    job.MarkAsCompletedWithCloudStorage(outputFileName, storageKey);
+}
+else
+{
+    job.MarkAsCompleted(outputFileName, conversionResult.Value);
+}
+```
+
+### Download Handler Pattern
+
+```csharp
+byte[] content;
+if (job.StorageLocation == StorageLocation.CloudStorage)
+{
+    var downloadResult = await this.cloudStorageService.DownloadAsync(
+        job.CloudStorageKey!, cancellationToken);
+
+    if (downloadResult.IsFailure)
+        return downloadResult.Error;
+
+    content = downloadResult.Value;
+}
+else
+{
+    content = job.OutputData!;
+}
+```
+
+### Job Cleanup Integration
+
+The `JobCleanupService` automatically deletes cloud storage objects before removing expired jobs:
+
+```csharp
+foreach (var job in expiredJobs.Where(j =>
+    j.StorageLocation == StorageLocation.CloudStorage &&
+    !string.IsNullOrEmpty(j.CloudStorageKey)))
+{
+    await this.cloudStorageService.DeleteAsync(job.CloudStorageKey!, cancellationToken);
+}
+```
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `Domain/Enums/StorageLocation.cs` | Create enum |
+| `Domain/Entities/ConversionJob.cs` | Add StorageLocation, CloudStorageKey, MarkAsCompletedWithCloudStorage |
+| `Application/Interfaces/ICloudStorageService.cs` | Create interface |
+| `Infrastructure/Options/CloudStorageSettings.cs` | Create settings class |
+| `Infrastructure/Services/CloudStorageService.cs` | Create S3 implementation |
+| `Infrastructure/Persistence/Configurations/ConversionJobConfiguration.cs` | Configure new columns |
+| `Application/Queries/Conversion/DownloadConversionResultQueryHandler.cs` | Handle cloud storage download |
+| `Application/Commands/Conversion/*CommandHandler.cs` | Add cloud storage upload |
+| `Infrastructure/Services/JobCleanupService.cs` | Delete cloud objects before job removal |
+| `Infrastructure/DependencyInjection.cs` | Register CloudStorageService and settings |
+| `appsettings.json` | Add CloudStorage section |
+
+### Testing
+
+Unit tests should verify:
+- Service returns disabled error when cloud storage is disabled
+- IsEnabled returns correct value based on settings
+- Upload succeeds with valid settings
+- Download succeeds with valid key
+- Delete succeeds with valid key
+- Command handlers use cloud storage when enabled
+- Command handlers use database when disabled
+- Download handler retrieves from cloud storage for cloud-stored jobs
+- Download handler retrieves from database for database-stored jobs
+- Cleanup service deletes cloud objects before removing jobs
+
+---
+
 ## Health Check Improvements
 
 Enhance the health endpoint to provide detailed component health status for monitoring and Kubernetes readiness probes.
@@ -1670,6 +1826,16 @@ finally
       "AllowedMarkdownContentTypes": ["text/markdown", "text/plain"],
       "AllowedImageContentTypes": ["image/jpeg", "image/png", "image/webp"]
     }
+  },
+  "CloudStorage": {
+    "Enabled": false,
+    "ServiceUrl": "https://s3.amazonaws.com",
+    "BucketName": "file-conversion-outputs",
+    "AccessKey": "",
+    "SecretKey": "",
+    "Region": "us-east-1",
+    "ForcePathStyle": false,
+    "PresignedUrlExpirationMinutes": 60
   }
 }
 ```
@@ -1809,6 +1975,7 @@ The task is COMPLETE when ALL of the following are true:
 29. ✅ OpenTelemetry tracing for distributed tracing and observability
 30. ✅ Input validation with configurable file size limits, URL allowlist/blocklist, content type validation
 31. ✅ Admin user seeding on startup for initial setup
+32. ✅ Cloud storage integration for S3-compatible storage (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2)
 
 ---
 
