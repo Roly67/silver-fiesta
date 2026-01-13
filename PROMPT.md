@@ -249,6 +249,11 @@ Contains:
 - `GET /api/v1/admin/users/{id}/quota` - Get user's current quota
 - `GET /api/v1/admin/users/{id}/quota/history` - Get user's quota history
 - `PUT /api/v1/admin/users/{id}/quota` - Update user's quota limits
+- `GET /api/v1/admin/users/{id}/rate-limits` - Get user's rate limit settings
+- `PUT /api/v1/admin/users/{id}/rate-limits/tier` - Set user's rate limit tier
+- `PUT /api/v1/admin/users/{id}/rate-limits/override/{policy}` - Set per-policy override
+- `DELETE /api/v1/admin/users/{id}/rate-limits/overrides` - Clear all overrides
+- `GET /api/v1/admin/rate-limits/tiers` - List available rate limit tiers
 - `GET /api/v1/admin/stats` - Get job statistics
 
 ---

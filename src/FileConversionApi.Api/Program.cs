@@ -100,29 +100,13 @@ try
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-            // Standard policy for general endpoints
+            // Standard policy for general endpoints (per-user dynamic limits)
             options.AddPolicy("standard", context =>
-                RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: GetPartitionKey(context),
-                    factory: _ => new FixedWindowRateLimiterOptions
-                    {
-                        PermitLimit = rateLimitSettings.StandardPolicy.PermitLimit,
-                        Window = TimeSpan.FromMinutes(rateLimitSettings.StandardPolicy.WindowMinutes),
-                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        QueueLimit = 0,
-                    }));
+                CreateUserAwarePartition(context, "standard", rateLimitSettings));
 
-            // Conversion policy for resource-intensive endpoints
+            // Conversion policy for resource-intensive endpoints (per-user dynamic limits)
             options.AddPolicy("conversion", context =>
-                RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: GetPartitionKey(context),
-                    factory: _ => new FixedWindowRateLimiterOptions
-                    {
-                        PermitLimit = rateLimitSettings.ConversionPolicy.PermitLimit,
-                        Window = TimeSpan.FromMinutes(rateLimitSettings.ConversionPolicy.WindowMinutes),
-                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        QueueLimit = 0,
-                    }));
+                CreateUserAwarePartition(context, "conversion", rateLimitSettings));
 
             // Auth policy for authentication endpoints (uses IP-based partitioning)
             options.AddPolicy("auth", context =>
@@ -322,6 +306,70 @@ try
         // Use user ID for authenticated requests, IP for anonymous
         var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return userId ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+    }
+
+    // Helper method to create user-aware rate limit partition with dynamic limits
+    static RateLimitPartition<string> CreateUserAwarePartition(
+        HttpContext context,
+        string policyName,
+        RateLimitingSettings settings)
+    {
+        var partitionKey = GetPartitionKey(context);
+        var userIdClaim = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var isAdmin = context.User?.IsInRole("Admin") ?? false;
+
+        // If admin exemption is enabled and user is admin, use a very high limit
+        if (settings.ExemptAdmins && isAdmin)
+        {
+            return RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: $"admin:{partitionKey}",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = int.MaxValue,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0,
+                });
+        }
+
+        // For authenticated users, try to get their effective limits
+        if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var userId))
+        {
+            var rateLimitService = context.RequestServices.GetService<IUserRateLimitService>();
+            if (rateLimitService != null)
+            {
+                // Get effective limits synchronously (the service uses cached values)
+                var effectiveLimits = rateLimitService
+                    .GetEffectiveLimitsAsync(new FileConversionApi.Domain.ValueObjects.UserId(userId), policyName, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: partitionKey,
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = effectiveLimits.PermitLimit,
+                        Window = effectiveLimits.Window,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0,
+                    });
+            }
+        }
+
+        // Fall back to default policy settings for anonymous users or if service unavailable
+        var defaultPolicy = policyName.Equals("conversion", StringComparison.OrdinalIgnoreCase)
+            ? settings.ConversionPolicy
+            : settings.StandardPolicy;
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: partitionKey,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = defaultPolicy.PermitLimit,
+                Window = TimeSpan.FromMinutes(defaultPolicy.WindowMinutes),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+            });
     }
 }
 catch (Exception ex)
