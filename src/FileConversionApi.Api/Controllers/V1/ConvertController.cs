@@ -83,6 +83,58 @@ public class ConvertController : ControllerBase
     }
 
     /// <summary>
+    /// Converts HTML to image (PNG, JPEG, or WebP).
+    /// </summary>
+    /// <param name="request">The conversion request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The conversion job details.</returns>
+    /// <remarks>
+    /// Takes a screenshot of HTML content or a URL.
+    /// Supported output formats: png, jpeg, webp.
+    /// Options include viewport size, full page capture, and image quality.
+    /// </remarks>
+    /// <response code="202">Conversion job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("html-to-image")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ConvertHtmlToImage(
+        [FromBody] HtmlToImageRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ConvertHtmlToImageCommand
+        {
+            HtmlContent = request.HtmlContent,
+            Url = request.Url,
+            FileName = request.FileName,
+            TargetFormat = request.TargetFormat,
+            Options = request.Options,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Conversion Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
     /// Converts Markdown to PDF.
     /// </summary>
     /// <param name="request">The conversion request.</param>

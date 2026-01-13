@@ -30,7 +30,7 @@
 <td width="50%">
 
 ### 🔄 Document Conversion
-Convert HTML, Markdown, or URLs to PDF. Convert Markdown to HTML. Convert DOCX (Word) and XLSX (Excel) to PDF using LibreOffice. Transform images between PNG, JPEG, and WebP formats with resize and quality options.
+Convert HTML, Markdown, or URLs to PDF. Convert Markdown to HTML. Convert DOCX (Word) and XLSX (Excel) to PDF using LibreOffice. Capture HTML pages or URLs as PNG, JPEG, or WebP screenshots. Transform images between PNG, JPEG, and WebP formats with resize and quality options.
 
 </td>
 <td width="50%">
@@ -369,6 +369,11 @@ X-API-Key: your-api-key-here
 </tr>
 <tr>
 <td><code>POST</code></td>
+<td><code>/api/v1/convert/html-to-image</code></td>
+<td>Convert HTML/URL to image (PNG, JPEG, WebP)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
 <td><code>/api/v1/convert/docx-to-pdf</code></td>
 <td>Convert DOCX (Word) to PDF</td>
 </tr>
@@ -673,6 +678,59 @@ Content-Type: application/json
 | `imageWidth` | Target width in pixels (maintains aspect ratio) |
 | `imageHeight` | Target height in pixels (maintains aspect ratio) |
 | `imageQuality` | Quality 1-100 (for JPEG/WebP) |
+
+</details>
+
+<details>
+<summary><strong>Convert HTML to Image (Screenshot)</strong></summary>
+
+Capture HTML content or a URL as a PNG, JPEG, or WebP screenshot:
+
+```json
+POST /api/v1/convert/html-to-image
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "htmlContent": "<html><body><h1>Hello World</h1></body></html>",
+  "fileName": "screenshot.html",
+  "targetFormat": "png",
+  "webhookUrl": "https://example.com/webhooks/conversion",
+  "options": {
+    "fullPage": true,
+    "viewportWidth": 1920,
+    "viewportHeight": 1080
+  }
+}
+```
+
+**Convert from URL:**
+```json
+{
+  "url": "https://example.com",
+  "targetFormat": "jpeg",
+  "fileName": "webpage.html",
+  "options": {
+    "fullPage": false,
+    "viewportWidth": 1280,
+    "viewportHeight": 720
+  }
+}
+```
+
+**Supported output formats:** PNG (default), JPEG, WebP
+
+**Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `fullPage` | bool | true | Capture full scrollable page or just the viewport |
+| `viewportWidth` | int | 1920 | Browser viewport width in pixels |
+| `viewportHeight` | int | 1080 | Browser viewport height in pixels |
+
+**Notes:**
+- Uses Puppeteer (headless Chromium) for rendering
+- JavaScript is executed before capture
+- Can be combined with webhook notifications for async processing
 
 </details>
 

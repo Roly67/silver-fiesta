@@ -91,6 +91,20 @@ public static class DependencyInjection
         services.AddSingleton<IFileConverter, WebpToPngConverter>();
         services.AddSingleton<IFileConverter, WebpToJpegConverter>();
 
+        // HTML to Image converters
+        services.AddSingleton<IFileConverter>(sp => new HtmlToImageConverter(
+            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PuppeteerSettings>>(),
+            "png",
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<HtmlToImageConverter>>()));
+        services.AddSingleton<IFileConverter>(sp => new HtmlToImageConverter(
+            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PuppeteerSettings>>(),
+            "jpeg",
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<HtmlToImageConverter>>()));
+        services.AddSingleton<IFileConverter>(sp => new HtmlToImageConverter(
+            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PuppeteerSettings>>(),
+            "webp",
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<HtmlToImageConverter>>()));
+
         services.AddSingleton<IConverterFactory, ConverterFactory>();
 
         // Health Checks

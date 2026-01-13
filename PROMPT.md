@@ -217,6 +217,7 @@ Contains:
 
 ### Conversions
 - `POST /api/v1/convert/html-to-pdf` - Convert HTML to PDF (202 Accepted)
+- `POST /api/v1/convert/html-to-image` - Convert HTML/URL to image screenshot (202 Accepted)
 - `POST /api/v1/convert/markdown-to-pdf` - Convert Markdown to PDF (202 Accepted)
 - `POST /api/v1/convert/markdown-to-html` - Convert Markdown to HTML (202 Accepted)
 - `POST /api/v1/convert/image` - Convert image between formats (202 Accepted)
@@ -372,6 +373,62 @@ POST /api/v1/convert/image
   }
 }
 ```
+
+### HTML to Image Converter
+
+Capture HTML content or URLs as screenshots using PuppeteerSharp (headless Chromium).
+
+**Supported Output Formats:**
+- PNG (default)
+- JPEG
+- WebP
+
+**Features:**
+- Full page capture or viewport-only
+- Configurable viewport dimensions
+- JavaScript execution before capture
+- URL or inline HTML content
+
+**Screenshot-specific ConversionOptions:**
+- `FullPage` - Capture full scrollable page (default: true)
+- `ViewportWidth` - Viewport width in pixels (default: 1920)
+- `ViewportHeight` - Viewport height in pixels (default: 1080)
+
+**API Request Examples:**
+
+HTML to PNG:
+```json
+POST /api/v1/convert/html-to-image
+{
+  "htmlContent": "<html><body><h1>Hello World</h1></body></html>",
+  "fileName": "screenshot.html",
+  "targetFormat": "png",
+  "options": {
+    "fullPage": true,
+    "viewportWidth": 1920,
+    "viewportHeight": 1080
+  }
+}
+```
+
+URL to JPEG:
+```json
+POST /api/v1/convert/html-to-image
+{
+  "url": "https://example.com",
+  "fileName": "webpage.html",
+  "targetFormat": "jpeg",
+  "options": {
+    "fullPage": false,
+    "viewportWidth": 1280,
+    "viewportHeight": 720
+  }
+}
+```
+
+**Implementation:** Uses `HtmlToImageConverter` class with PuppeteerSharp's `ScreenshotDataAsync` method. Converters are registered for each supported output format (png, jpeg, webp).
+
+---
 
 ### Office Document Converters
 
@@ -1957,25 +2014,26 @@ The task is COMPLETE when ALL of the following are true:
 11. ✅ Markdown to PDF conversion works with Markdig + PuppeteerSharp
 12. ✅ Markdown to HTML conversion works with Markdig
 13. ✅ Image format conversions work with ImageSharp (PNG, JPEG, WebP)
-14. ✅ PDF watermarking works with PdfSharpCore
-15. ✅ PDF password protection works with PdfSharpCore
-16. ✅ PDF merge/split works with PdfSharpCore
-17. ✅ Webhook notifications work for completed/failed jobs
-18. ✅ JWT + API Key authentication functional
-19. ✅ Rate limiting implemented with per-user and per-endpoint policies
-20. ✅ Job cleanup service auto-deletes expired jobs
-21. ✅ Health checks report detailed component status (DB, Chromium, disk)
-22. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
-23. ✅ Unit tests exist with 80%+ coverage
-24. ✅ docker-compose.yml exists and works
-25. ✅ README.md documents how to run the project
-26. ✅ Batch conversions work (multiple files in single request)
-27. ✅ Admin API for user management and statistics
-28. ✅ Conversion templates CRUD for saving/reusing settings
-29. ✅ OpenTelemetry tracing for distributed tracing and observability
-30. ✅ Input validation with configurable file size limits, URL allowlist/blocklist, content type validation
-31. ✅ Admin user seeding on startup for initial setup
-32. ✅ Cloud storage integration for S3-compatible storage (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2)
+14. ✅ HTML to image screenshot conversion works with PuppeteerSharp (PNG, JPEG, WebP)
+15. ✅ PDF watermarking works with PdfSharpCore
+16. ✅ PDF password protection works with PdfSharpCore
+17. ✅ PDF merge/split works with PdfSharpCore
+18. ✅ Webhook notifications work for completed/failed jobs
+19. ✅ JWT + API Key authentication functional
+20. ✅ Rate limiting implemented with per-user and per-endpoint policies
+21. ✅ Job cleanup service auto-deletes expired jobs
+22. ✅ Health checks report detailed component status (DB, Chromium, disk)
+23. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
+24. ✅ Unit tests exist with 80%+ coverage
+25. ✅ docker-compose.yml exists and works
+26. ✅ README.md documents how to run the project
+27. ✅ Batch conversions work (multiple files in single request)
+28. ✅ Admin API for user management and statistics
+29. ✅ Conversion templates CRUD for saving/reusing settings
+30. ✅ OpenTelemetry tracing for distributed tracing and observability
+31. ✅ Input validation with configurable file size limits, URL allowlist/blocklist, content type validation
+32. ✅ Admin user seeding on startup for initial setup
+33. ✅ Cloud storage integration for S3-compatible storage (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2)
 
 ---
 
