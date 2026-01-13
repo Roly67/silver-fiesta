@@ -11,6 +11,7 @@ using FileConversionApi.Application.Queries.Conversion;
 using FileConversionApi.Domain.Entities;
 using FileConversionApi.Domain.Enums;
 using FileConversionApi.Domain.Errors;
+using FileConversionApi.Domain.Primitives;
 using FileConversionApi.Domain.ValueObjects;
 
 using FluentAssertions;
@@ -27,6 +28,7 @@ public class DownloadConversionResultQueryHandlerTests
 {
     private readonly Mock<IConversionJobRepository> jobRepositoryMock;
     private readonly Mock<ICurrentUserService> currentUserServiceMock;
+    private readonly Mock<ICloudStorageService> cloudStorageServiceMock;
     private readonly Mock<ILogger<DownloadConversionResultQueryHandler>> loggerMock;
     private readonly DownloadConversionResultQueryHandler handler;
 
@@ -37,11 +39,13 @@ public class DownloadConversionResultQueryHandlerTests
     {
         this.jobRepositoryMock = new Mock<IConversionJobRepository>();
         this.currentUserServiceMock = new Mock<ICurrentUserService>();
+        this.cloudStorageServiceMock = new Mock<ICloudStorageService>();
         this.loggerMock = new Mock<ILogger<DownloadConversionResultQueryHandler>>();
 
         this.handler = new DownloadConversionResultQueryHandler(
             this.jobRepositoryMock.Object,
             this.currentUserServiceMock.Object,
+            this.cloudStorageServiceMock.Object,
             this.loggerMock.Object);
     }
 
@@ -521,6 +525,7 @@ public class DownloadConversionResultQueryHandlerTests
         var act = () => new DownloadConversionResultQueryHandler(
             null!,
             this.currentUserServiceMock.Object,
+            this.cloudStorageServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
@@ -538,11 +543,30 @@ public class DownloadConversionResultQueryHandlerTests
         var act = () => new DownloadConversionResultQueryHandler(
             this.jobRepositoryMock.Object,
             null!,
+            this.cloudStorageServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("currentUserService");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when cloudStorageService is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenCloudStorageServiceIsNull_ThrowsArgumentNullException()
+    {
+        // Act
+        var act = () => new DownloadConversionResultQueryHandler(
+            this.jobRepositoryMock.Object,
+            this.currentUserServiceMock.Object,
+            null!,
+            this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("cloudStorageService");
     }
 
     /// <summary>
@@ -555,10 +579,99 @@ public class DownloadConversionResultQueryHandlerTests
         var act = () => new DownloadConversionResultQueryHandler(
             this.jobRepositoryMock.Object,
             this.currentUserServiceMock.Object,
+            this.cloudStorageServiceMock.Object,
             null!);
 
         // Assert
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("logger");
+    }
+
+    /// <summary>
+    /// Tests that Handle downloads from cloud storage when job uses cloud storage.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task Handle_WhenJobUsesCloudStorage_DownloadsFromCloudStorage()
+    {
+        // Arrange
+        var userId = UserId.New();
+        var jobId = Guid.NewGuid();
+        var query = new DownloadConversionResultQuery(jobId);
+        var cloudStorageKey = $"{userId.Value}/{jobId}/output.pdf";
+        var outputData = new byte[] { 0x25, 0x50, 0x44, 0x46 }; // PDF magic bytes
+
+        var job = ConversionJob.Create(userId, "html", "pdf", "input.html");
+        job.MarkAsProcessing();
+        job.MarkAsCompletedWithCloudStorage("output.pdf", cloudStorageKey);
+
+        this.currentUserServiceMock
+            .Setup(x => x.UserId)
+            .Returns(userId);
+
+        this.jobRepositoryMock
+            .Setup(x => x.GetByIdForUserAsync(
+                It.Is<ConversionJobId>(id => id.Value == jobId),
+                userId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(job);
+
+        this.cloudStorageServiceMock
+            .Setup(x => x.DownloadAsync(cloudStorageKey, It.IsAny<CancellationToken>()))
+            .Returns(Task.FromResult(Result.Success(outputData)));
+
+        // Act
+        var result = await this.handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Content.Should().BeEquivalentTo(outputData);
+        result.Value.FileName.Should().Be("output.pdf");
+
+        this.cloudStorageServiceMock.Verify(
+            x => x.DownloadAsync(cloudStorageKey, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that Handle returns error when cloud storage download fails.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    [Fact]
+    public async Task Handle_WhenCloudStorageDownloadFails_ReturnsError()
+    {
+        // Arrange
+        var userId = UserId.New();
+        var jobId = Guid.NewGuid();
+        var query = new DownloadConversionResultQuery(jobId);
+        var cloudStorageKey = $"{userId.Value}/{jobId}/output.pdf";
+
+        var job = ConversionJob.Create(userId, "html", "pdf", "input.html");
+        job.MarkAsProcessing();
+        job.MarkAsCompletedWithCloudStorage("output.pdf", cloudStorageKey);
+
+        this.currentUserServiceMock
+            .Setup(x => x.UserId)
+            .Returns(userId);
+
+        this.jobRepositoryMock
+            .Setup(x => x.GetByIdForUserAsync(
+                It.Is<ConversionJobId>(id => id.Value == jobId),
+                userId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(job);
+
+        var downloadError = new Error("CloudStorage.DownloadFailed", "Failed to download file");
+        this.cloudStorageServiceMock
+            .Setup(x => x.DownloadAsync(cloudStorageKey, It.IsAny<CancellationToken>()))
+            .Returns(Task.FromResult(Result.Failure<byte[]>(downloadError)));
+
+        // Act
+        var result = await this.handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(downloadError);
     }
 }

@@ -90,7 +90,7 @@ public class ChromiumHealthCheck : IHealthCheck
 
             return HealthCheckResult.Healthy("Chromium browser available");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             this.logger.LogWarning(ex, "Chromium health check failed");
             return HealthCheckResult.Unhealthy("Chromium browser unavailable", ex);

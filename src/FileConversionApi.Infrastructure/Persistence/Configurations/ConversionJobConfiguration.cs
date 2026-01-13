@@ -66,8 +66,17 @@ public class ConversionJobConfiguration : IEntityTypeConfiguration<ConversionJob
         builder.Property(j => j.WebhookUrl)
             .HasMaxLength(2048);
 
+        builder.Property(j => j.StorageLocation)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(StorageLocation.Database);
+
+        builder.Property(j => j.CloudStorageKey)
+            .HasMaxLength(1024);
+
         builder.HasIndex(j => j.UserId);
         builder.HasIndex(j => j.Status);
         builder.HasIndex(j => j.CreatedAt);
+        builder.HasIndex(j => j.StorageLocation);
     }
 }

@@ -42,7 +42,7 @@ public class DatabaseHealthCheck : IHealthCheck
 
             return HealthCheckResult.Unhealthy("PostgreSQL connection failed");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             return HealthCheckResult.Unhealthy("PostgreSQL connection failed", ex);
         }
