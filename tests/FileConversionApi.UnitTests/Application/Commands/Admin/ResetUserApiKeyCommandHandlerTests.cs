@@ -86,7 +86,7 @@ public class ResetUserApiKeyCommandHandlerTests
         // Arrange
         this.userRepositoryMock
             .Setup(x => x.GetByIdAsync(It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((User?)null);
+            .ReturnsAsync(null as User);
 
         var command = new ResetUserApiKeyCommand { UserId = Guid.NewGuid() };
 

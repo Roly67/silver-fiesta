@@ -550,7 +550,7 @@ public class BatchConversionCommandHandlerTests
     public async Task Handle_WhenCancellationRequested_ThrowsOperationCanceledException()
     {
         // Arrange
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         cts.Cancel();
 
         var command = new BatchConversionCommand

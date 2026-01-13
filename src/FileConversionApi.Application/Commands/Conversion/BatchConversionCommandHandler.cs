@@ -145,7 +145,7 @@ public class BatchConversionCommandHandler : IRequestHandler<BatchConversionComm
 
             return CreateFailureResult(index, conversionResult.Error.Code, conversionResult.Error.Message);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             this.logger.LogError(ex, "Failed to process batch item at index {Index}", index);
             return CreateFailureResult(index, "Batch.ProcessingFailed", ex.Message);

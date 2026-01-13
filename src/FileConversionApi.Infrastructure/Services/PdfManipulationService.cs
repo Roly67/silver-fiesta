@@ -85,7 +85,7 @@ public partial class PdfManipulationService : IPdfManipulationService
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             this.logger.LogError(ex, "Failed to merge PDF documents");
             return Task.FromResult<Result<byte[]>>(new Error(
@@ -199,7 +199,7 @@ public partial class PdfManipulationService : IPdfManipulationService
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             this.logger.LogError(ex, "Failed to split PDF document");
             return Task.FromResult<Result<Dictionary<string, byte[]>>>(new Error(

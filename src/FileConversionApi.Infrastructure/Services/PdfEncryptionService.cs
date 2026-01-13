@@ -77,7 +77,7 @@ public class PdfEncryptionService : IPdfEncryptionService
 
             return Task.FromResult<Result<byte[]>>(outputStream.ToArray());
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             this.logger.LogError(ex, "Failed to encrypt PDF");
             return Task.FromResult<Result<byte[]>>(new Error(

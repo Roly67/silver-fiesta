@@ -119,7 +119,7 @@ public class JobCleanupService : BackgroundService
                 // Graceful shutdown, don't log as error
                 break;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
             {
                 this.logger.LogError(ex, "Error occurred during job cleanup");
             }

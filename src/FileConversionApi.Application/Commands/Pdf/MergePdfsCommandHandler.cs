@@ -143,7 +143,7 @@ public class MergePdfsCommandHandler : IRequestHandler<MergePdfsCommand, Result<
 
             return ConversionJobDto.FromEntity(job);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             stopwatch.Stop();
             this.metricsService.RecordConversionFailed("pdf-merge", "pdf");

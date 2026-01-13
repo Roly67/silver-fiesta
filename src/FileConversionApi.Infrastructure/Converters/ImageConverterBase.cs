@@ -89,7 +89,7 @@ public abstract class ImageConverterBase : IFileConverter
             this.logger.LogError(ex, "Unknown image format");
             return ConversionJobErrors.ConversionFailed($"Unknown or unsupported image format: {ex.Message}");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             this.logger.LogError(ex, "Image conversion failed");
             return ConversionJobErrors.ConversionFailed(ex.Message);

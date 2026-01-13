@@ -113,7 +113,7 @@ public class SetUserAdminCommandHandlerTests
         // Arrange
         this.userRepositoryMock
             .Setup(x => x.GetByIdAsync(It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((User?)null);
+            .ReturnsAsync(null as User);
 
         var command = new SetUserAdminCommand { UserId = Guid.NewGuid(), IsAdmin = true };
 

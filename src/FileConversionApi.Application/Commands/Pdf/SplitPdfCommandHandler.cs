@@ -142,7 +142,7 @@ public class SplitPdfCommandHandler : IRequestHandler<SplitPdfCommand, Result<Co
 
             return ConversionJobDto.FromEntity(job);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             stopwatch.Stop();
             this.metricsService.RecordConversionFailed("pdf-split", "zip");

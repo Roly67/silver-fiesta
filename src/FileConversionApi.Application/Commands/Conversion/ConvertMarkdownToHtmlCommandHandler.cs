@@ -126,7 +126,7 @@ public class ConvertMarkdownToHtmlCommandHandler : IRequestHandler<ConvertMarkdo
 
             return ConversionJobDto.FromEntity(job);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             stopwatch.Stop();
             this.metricsService.RecordConversionFailed("markdown", "html");
