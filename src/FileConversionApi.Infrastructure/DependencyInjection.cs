@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.Configure<HealthCheckSettings>(configuration.GetSection(HealthCheckSettings.SectionName));
         services.Configure<MetricsSettings>(configuration.GetSection(MetricsSettings.SectionName));
         services.Configure<InputValidationSettings>(configuration.GetSection(InputValidationSettings.SectionName));
+        services.Configure<AdminSeedSettings>(configuration.GetSection(AdminSeedSettings.SectionName));
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -56,6 +57,7 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddHttpClient<IWebhookService, WebhookService>();
         services.AddHostedService<JobCleanupService>();
+        services.AddHostedService<AdminSeederService>();
         services.AddSingleton<IMetricsService, PrometheusMetricsService>();
         services.AddSingleton<IPdfWatermarkService, PdfWatermarkService>();
         services.AddSingleton<IPdfEncryptionService, PdfEncryptionService>();

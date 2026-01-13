@@ -1624,6 +1624,86 @@ Create `docker-compose.yml` for local development with:
 
 ---
 
+## Admin User Seeding
+
+Seed a default admin user on application startup for initial setup and development.
+
+### Strategy
+
+Create a hosted service that seeds a default admin user when the application starts. This ensures there's always an admin account available for initial access, especially in development environments.
+
+### Configuration
+
+The admin seeding feature is configured via `AdminSeed` section in appsettings.json:
+
+```json
+{
+  "AdminSeed": {
+    "Enabled": true,
+    "Email": "admin@fileconversionapi.local",
+    "Password": "Admin123!",
+    "SkipIfAdminExists": true
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Enabled` | `true` | Enable/disable admin seeding |
+| `Email` | `admin@fileconversionapi.local` | Default admin email address |
+| `Password` | `Admin123!` | Default admin password (change in production!) |
+| `SkipIfAdminExists` | `true` | Skip seeding if any admin user already exists |
+
+### Security Considerations
+
+- **Change default password in production** - Use environment variables: `AdminSeed__Password`
+- **Disable after initial setup** - Set `Enabled: false` after creating the first admin
+- **SkipIfAdminExists** - Prevents overwriting existing admin accounts
+
+### Implementation
+
+```csharp
+// Infrastructure/Options/AdminSeedSettings.cs
+public class AdminSeedSettings
+{
+    public const string SectionName = "AdminSeed";
+    public bool Enabled { get; set; } = true;
+    public string Email { get; set; } = "admin@fileconversionapi.local";
+    public string Password { get; set; } = "Admin123!";
+    public bool SkipIfAdminExists { get; set; } = true;
+}
+
+// Infrastructure/Services/AdminSeederService.cs - IHostedService implementation
+// - Checks if seeding is enabled
+// - Checks if admin already exists (when SkipIfAdminExists is true)
+// - Creates admin user with hashed password and admin privileges
+```
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `Infrastructure/Options/AdminSeedSettings.cs` | Create settings class |
+| `Infrastructure/Services/AdminSeederService.cs` | Create hosted service |
+| `Application/Interfaces/IUserRepository.cs` | Add AnyAdminExistsAsync method |
+| `Infrastructure/Persistence/Repositories/UserRepository.cs` | Implement AnyAdminExistsAsync |
+| `Infrastructure/DependencyInjection.cs` | Register settings and hosted service |
+| `appsettings.json` | Add AdminSeed configuration section |
+| `appsettings.Development.json` | Add AdminSeed with development defaults |
+
+### Testing
+
+Unit tests should verify:
+- Seeding is skipped when disabled
+- Seeding is skipped when admin already exists (SkipIfAdminExists=true)
+- Admin user is created with correct email and admin privileges
+- Password is hashed before storing
+- Seeding continues even when SkipIfAdminExists=false
+- Seeding is skipped when email already exists
+- Exceptions are handled gracefully
+
+---
+
 ## Completion Criteria
 
 The task is COMPLETE when ALL of the following are true:
@@ -1658,6 +1738,7 @@ The task is COMPLETE when ALL of the following are true:
 28. ✅ Conversion templates CRUD for saving/reusing settings
 29. ✅ OpenTelemetry tracing for distributed tracing and observability
 30. ✅ Input validation with configurable file size limits, URL allowlist/blocklist, content type validation
+31. ✅ Admin user seeding on startup for initial setup
 
 ---
 

@@ -73,4 +73,11 @@ public interface IUserRepository
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The total count of users.</returns>
     Task<int> GetTotalCountAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Checks if any admin user exists in the system.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>True if at least one admin user exists; otherwise, false.</returns>
+    Task<bool> AnyAdminExistsAsync(CancellationToken cancellationToken);
 }
