@@ -112,7 +112,7 @@ jobs:
         run: docker build -t fileconversionapi:scan .
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: 'fileconversionapi:scan'
           format: 'table'
@@ -121,7 +121,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Run Trivy and upload SARIF
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: 'fileconversionapi:scan'
           format: 'sarif'
