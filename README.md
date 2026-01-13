@@ -147,6 +147,9 @@ Distributed tracing with OpenTelemetry for end-to-end request visibility. Export
 </td>
 <td width="50%">
 
+### 🛡️ Input Validation
+Configurable file size limits, URL allowlist/blocklist for SSRF protection, and content type validation to ensure secure input handling.
+
 </td>
 </tr>
 </table>
@@ -1151,6 +1154,59 @@ tests/
 - Conversion operations (custom spans)
 
 > **Note:** To view traces, run Jaeger locally: `docker run -d -p 4317:4317 -p 16686:16686 jaegertracing/all-in-one:latest` and set `OtlpEndpoint` to `http://localhost:4317`.
+
+</details>
+
+<details>
+<summary><strong>Input Validation Settings</strong></summary>
+
+```json
+{
+  "InputValidation": {
+    "Enabled": true,
+    "MaxFileSizeBytes": 52428800,
+    "MaxHtmlContentBytes": 10485760,
+    "MaxMarkdownContentBytes": 5242880,
+    "UrlValidation": {
+      "Enabled": true,
+      "UseAllowlist": false,
+      "BlockPrivateIpAddresses": true,
+      "Blocklist": ["localhost", "127.0.0.1", "10.*", "192.168.*"]
+    },
+    "ContentTypeValidation": {
+      "Enabled": true
+    }
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Enabled` | true | Enable/disable input validation globally |
+| `MaxFileSizeBytes` | 52428800 | Max file upload size (50MB) |
+| `MaxHtmlContentBytes` | 10485760 | Max HTML content size (10MB) |
+| `MaxMarkdownContentBytes` | 5242880 | Max Markdown content size (5MB) |
+
+**URL Validation Settings:**
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `UrlValidation.Enabled` | true | Enable URL validation for HTML conversion |
+| `UrlValidation.UseAllowlist` | false | Use allowlist mode (true) or blocklist mode (false) |
+| `UrlValidation.BlockPrivateIpAddresses` | true | Block private/internal IP addresses (SSRF protection) |
+| `UrlValidation.Allowlist` | [] | Allowed URL patterns (when UseAllowlist=true) |
+| `UrlValidation.Blocklist` | [...] | Blocked URL patterns including localhost, private IPs |
+
+**Content Type Validation:**
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `ContentTypeValidation.Enabled` | true | Enable content type validation |
+| `AllowedHtmlContentTypes` | text/html, text/plain, application/xhtml+xml | Allowed MIME types for HTML |
+| `AllowedMarkdownContentTypes` | text/markdown, text/plain, text/x-markdown | Allowed MIME types for Markdown |
+| `AllowedImageContentTypes` | image/jpeg, image/png, image/gif, image/webp, image/bmp, image/tiff | Allowed MIME types for images |
+
+> **Security Note:** The default blocklist includes localhost, loopback addresses, private IP ranges (10.x, 172.16-31.x, 192.168.x), link-local addresses, and cloud metadata endpoints to protect against SSRF attacks.
 
 </details>
 

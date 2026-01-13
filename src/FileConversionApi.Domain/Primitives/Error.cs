@@ -26,4 +26,12 @@ public sealed record Error(string Code, string Message)
     /// </summary>
     /// <param name="error">The error to convert.</param>
     public static implicit operator Result(Error error) => Result.Failure(error);
+
+    /// <summary>
+    /// Creates a validation error with the specified code and message.
+    /// </summary>
+    /// <param name="code">The error code.</param>
+    /// <param name="message">The error message.</param>
+    /// <returns>A new validation error.</returns>
+    public static Error Validation(string code, string message) => new(code, message);
 }

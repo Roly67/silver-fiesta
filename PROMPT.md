@@ -1582,6 +1582,24 @@ finally
     "OtlpEndpoint": "http://localhost:4317",
     "ExportToConsole": false,
     "SamplingRatio": 1.0
+  },
+  "InputValidation": {
+    "Enabled": true,
+    "MaxFileSizeBytes": 52428800,
+    "MaxHtmlContentBytes": 10485760,
+    "MaxMarkdownContentBytes": 5242880,
+    "UrlValidation": {
+      "Enabled": true,
+      "UseAllowlist": false,
+      "BlockPrivateIpAddresses": true,
+      "Blocklist": ["localhost", "127.0.0.1", "10.*", "192.168.*"]
+    },
+    "ContentTypeValidation": {
+      "Enabled": true,
+      "AllowedHtmlContentTypes": ["text/html", "text/plain"],
+      "AllowedMarkdownContentTypes": ["text/markdown", "text/plain"],
+      "AllowedImageContentTypes": ["image/jpeg", "image/png", "image/webp"]
+    }
   }
 }
 ```
@@ -1639,6 +1657,7 @@ The task is COMPLETE when ALL of the following are true:
 27. ✅ Admin API for user management and statistics
 28. ✅ Conversion templates CRUD for saving/reusing settings
 29. ✅ OpenTelemetry tracing for distributed tracing and observability
+30. ✅ Input validation with configurable file size limits, URL allowlist/blocklist, content type validation
 
 ---
 

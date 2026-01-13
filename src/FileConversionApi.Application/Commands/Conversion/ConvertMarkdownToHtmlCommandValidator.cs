@@ -1,4 +1,4 @@
-// <copyright file="ConvertMarkdownToPdfCommandValidator.cs" company="FileConversionApi">
+// <copyright file="ConvertMarkdownToHtmlCommandValidator.cs" company="FileConversionApi">
 // FileConversionApi
 // </copyright>
 
@@ -9,25 +9,25 @@ using FluentValidation;
 namespace FileConversionApi.Application.Commands.Conversion;
 
 /// <summary>
-/// Validator for the convert Markdown to PDF command.
+/// Validator for the convert Markdown to HTML command.
 /// </summary>
-public class ConvertMarkdownToPdfCommandValidator : AbstractValidator<ConvertMarkdownToPdfCommand>
+public class ConvertMarkdownToHtmlCommandValidator : AbstractValidator<ConvertMarkdownToHtmlCommand>
 {
     private readonly IInputValidationService? validationService;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ConvertMarkdownToPdfCommandValidator"/> class.
+    /// Initializes a new instance of the <see cref="ConvertMarkdownToHtmlCommandValidator"/> class.
     /// </summary>
-    public ConvertMarkdownToPdfCommandValidator()
+    public ConvertMarkdownToHtmlCommandValidator()
         : this(null)
     {
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ConvertMarkdownToPdfCommandValidator"/> class.
+    /// Initializes a new instance of the <see cref="ConvertMarkdownToHtmlCommandValidator"/> class.
     /// </summary>
     /// <param name="validationService">The input validation service.</param>
-    public ConvertMarkdownToPdfCommandValidator(IInputValidationService? validationService)
+    public ConvertMarkdownToHtmlCommandValidator(IInputValidationService? validationService)
     {
         this.validationService = validationService;
 
@@ -38,28 +38,6 @@ public class ConvertMarkdownToPdfCommandValidator : AbstractValidator<ConvertMar
         this.RuleFor(x => x.Markdown)
             .Must(this.BeWithinMarkdownSizeLimit)
             .WithMessage(x => $"Markdown content must not exceed {this.GetMaxMarkdownSizeMb():F0}MB.");
-
-        this.When(x => x.Options is not null, () =>
-        {
-            this.RuleFor(x => x.Options!.PageSize)
-                .Must(BeValidPageSize)
-                .WithMessage("PageSize must be A4, Letter, Legal, Tabloid, Ledger, A3, or A5.");
-
-            this.RuleFor(x => x.Options!.JavaScriptTimeout)
-                .InclusiveBetween(1000, 120000)
-                .WithMessage("JavaScriptTimeout must be between 1000 and 120000 milliseconds.");
-        });
-    }
-
-    private static bool BeValidPageSize(string? pageSize)
-    {
-        if (string.IsNullOrWhiteSpace(pageSize))
-        {
-            return true;
-        }
-
-        var validSizes = new[] { "A4", "Letter", "Legal", "Tabloid", "Ledger", "A3", "A5" };
-        return validSizes.Contains(pageSize, StringComparer.OrdinalIgnoreCase);
     }
 
     private bool BeWithinMarkdownSizeLimit(string? content)
