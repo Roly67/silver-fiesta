@@ -66,7 +66,7 @@ public class DiskSpaceHealthCheck : IHealthCheck
                 $"{availableGb:F1} GB available",
                 data: data));
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             return Task.FromResult(HealthCheckResult.Unhealthy(
                 "Failed to check disk space",

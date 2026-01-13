@@ -75,7 +75,7 @@ public class PdfWatermarkService : IPdfWatermarkService
 
             return Task.FromResult<Result<byte[]>>(outputStream.ToArray());
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
         {
             this.logger.LogError(ex, "Failed to apply watermark to PDF");
             return Task.FromResult<Result<byte[]>>(new Error(
@@ -206,7 +206,11 @@ public class PdfWatermarkService : IPdfWatermarkService
                 return XColor.FromArgb(a, r, g, b);
             }
         }
-        catch
+        catch (FormatException)
+        {
+            // Fall back to default gray
+        }
+        catch (ArgumentException)
         {
             // Fall back to default gray
         }

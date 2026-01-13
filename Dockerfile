@@ -52,6 +52,14 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Install LibreOffice for Office document conversion (DOCX, XLSX to PDF)
+RUN apt-get update && apt-get install -y \
+    libreoffice-writer \
+    libreoffice-calc \
+    libreoffice-common \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/publish .
 
 EXPOSE 8080

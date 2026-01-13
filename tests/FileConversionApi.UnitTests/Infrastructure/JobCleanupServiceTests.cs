@@ -2,8 +2,10 @@
 // FileConversionApi
 // </copyright>
 
+using FileConversionApi.Application.Interfaces;
 using FileConversionApi.Domain.Entities;
 using FileConversionApi.Domain.Enums;
+using FileConversionApi.Domain.Primitives;
 using FileConversionApi.Domain.ValueObjects;
 using FileConversionApi.Infrastructure.Options;
 using FileConversionApi.Infrastructure.Persistence;
@@ -26,6 +28,7 @@ namespace FileConversionApi.UnitTests.Infrastructure;
 public class JobCleanupServiceTests : IDisposable
 {
     private readonly Mock<ILogger<JobCleanupService>> loggerMock;
+    private readonly Mock<ICloudStorageService> cloudStorageServiceMock;
     private readonly ServiceProvider serviceProvider;
     private readonly string databaseName;
     private readonly UserId testUserId;
@@ -37,6 +40,9 @@ public class JobCleanupServiceTests : IDisposable
     public JobCleanupServiceTests()
     {
         this.loggerMock = new Mock<ILogger<JobCleanupService>>();
+        this.cloudStorageServiceMock = new Mock<ICloudStorageService>();
+        this.cloudStorageServiceMock.Setup(x => x.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
         this.testUserId = UserId.New();
         this.databaseName = Guid.NewGuid().ToString();
 
@@ -57,7 +63,7 @@ public class JobCleanupServiceTests : IDisposable
         var settings = Options.Create(new JobCleanupSettings());
 
         // Act
-        var act = () => new JobCleanupService(null!, settings, this.loggerMock.Object);
+        var act = () => new JobCleanupService(null!, settings, this.cloudStorageServiceMock.Object, this.loggerMock.Object);
 
         // Assert
         act.Should().Throw<ArgumentNullException>()
@@ -74,11 +80,29 @@ public class JobCleanupServiceTests : IDisposable
         var scopeFactory = this.serviceProvider.GetRequiredService<IServiceScopeFactory>();
 
         // Act
-        var act = () => new JobCleanupService(scopeFactory, null!, this.loggerMock.Object);
+        var act = () => new JobCleanupService(scopeFactory, null!, this.cloudStorageServiceMock.Object, this.loggerMock.Object);
 
         // Assert
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("settings");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when cloudStorageService is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenCloudStorageServiceIsNull_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var scopeFactory = this.serviceProvider.GetRequiredService<IServiceScopeFactory>();
+        var settings = Options.Create(new JobCleanupSettings());
+
+        // Act
+        var act = () => new JobCleanupService(scopeFactory, settings, null!, this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("cloudStorageService");
     }
 
     /// <summary>
@@ -92,7 +116,7 @@ public class JobCleanupServiceTests : IDisposable
         var settings = Options.Create(new JobCleanupSettings());
 
         // Act
-        var act = () => new JobCleanupService(scopeFactory, settings, null!);
+        var act = () => new JobCleanupService(scopeFactory, settings, this.cloudStorageServiceMock.Object, null!);
 
         // Assert
         act.Should().Throw<ArgumentNullException>()
@@ -417,6 +441,6 @@ public class JobCleanupServiceTests : IDisposable
     {
         var scopeFactory = this.serviceProvider.GetRequiredService<IServiceScopeFactory>();
         var options = Options.Create(settings);
-        return new JobCleanupService(scopeFactory, options, this.loggerMock.Object);
+        return new JobCleanupService(scopeFactory, options, this.cloudStorageServiceMock.Object, this.loggerMock.Object);
     }
 }

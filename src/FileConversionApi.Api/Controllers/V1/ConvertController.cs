@@ -4,6 +4,7 @@
 
 using FileConversionApi.Api.Models;
 using FileConversionApi.Application.Commands.Conversion;
+using FileConversionApi.Application.Commands.Pdf;
 using FileConversionApi.Application.DTOs;
 using FileConversionApi.Application.Queries.Conversion;
 
@@ -57,6 +58,58 @@ public class ConvertController : ControllerBase
             HtmlContent = request.HtmlContent,
             Url = request.Url,
             FileName = request.FileName,
+            Options = request.Options,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Conversion Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
+    /// Converts HTML to image (PNG, JPEG, or WebP).
+    /// </summary>
+    /// <param name="request">The conversion request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The conversion job details.</returns>
+    /// <remarks>
+    /// Takes a screenshot of HTML content or a URL.
+    /// Supported output formats: png, jpeg, webp.
+    /// Options include viewport size, full page capture, and image quality.
+    /// </remarks>
+    /// <response code="202">Conversion job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("html-to-image")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ConvertHtmlToImage(
+        [FromBody] HtmlToImageRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ConvertHtmlToImageCommand
+        {
+            HtmlContent = request.HtmlContent,
+            Url = request.Url,
+            FileName = request.FileName,
+            TargetFormat = request.TargetFormat,
             Options = request.Options,
             WebhookUrl = request.WebhookUrl,
         };
@@ -172,6 +225,109 @@ public class ConvertController : ControllerBase
     }
 
     /// <summary>
+    /// Converts PDF pages to images (PNG, JPEG, or WebP).
+    /// </summary>
+    /// <param name="request">The conversion request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The conversion job details.</returns>
+    /// <remarks>
+    /// Renders PDF pages as images using PDFium.
+    /// Supported output formats: png, jpeg, webp.
+    /// Single page: returns image file. Multiple pages: returns ZIP file.
+    /// Options include DPI, page number selection, and PDF password.
+    /// </remarks>
+    /// <response code="202">Conversion job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("pdf-to-image")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ConvertPdfToImage(
+        [FromBody] PdfToImageRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ConvertPdfToImageCommand
+        {
+            PdfData = request.PdfData,
+            FileName = request.FileName,
+            TargetFormat = request.TargetFormat,
+            Options = request.Options,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Conversion Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
+    /// Extracts text from a PDF document.
+    /// </summary>
+    /// <param name="request">The extraction request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The extraction job details.</returns>
+    /// <remarks>
+    /// Extracts text content from PDF using PdfPig library.
+    /// Output format is plain text (.txt file).
+    /// Supports password-protected PDFs and single page extraction.
+    /// </remarks>
+    /// <response code="202">Extraction job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("pdf-to-text")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ExtractPdfText(
+        [FromBody] ExtractPdfTextRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ExtractPdfTextCommand
+        {
+            PdfData = request.PdfData,
+            FileName = request.FileName,
+            PageNumber = request.PageNumber,
+            Password = request.Password,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Extraction Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
     /// Converts an image between formats.
     /// </summary>
     /// <param name="request">The conversion request.</param>
@@ -220,6 +376,245 @@ public class ConvertController : ControllerBase
             nameof(this.GetJob),
             new { jobId = result.Value.Id },
             result.Value);
+    }
+
+    /// <summary>
+    /// Converts a DOCX (Word) document to PDF.
+    /// </summary>
+    /// <param name="request">The conversion request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The conversion job details.</returns>
+    /// <remarks>
+    /// Document data should be base64 encoded.
+    /// Supports watermark and password protection options.
+    /// </remarks>
+    /// <response code="202">Conversion job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("docx-to-pdf")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ConvertDocxToPdf(
+        [FromBody] DocxToPdfRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ConvertDocxToPdfCommand
+        {
+            DocumentData = request.DocumentData,
+            FileName = request.FileName,
+            Options = request.Options,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Conversion Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
+    /// Converts an XLSX (Excel) spreadsheet to PDF.
+    /// </summary>
+    /// <param name="request">The conversion request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The conversion job details.</returns>
+    /// <remarks>
+    /// Spreadsheet data should be base64 encoded.
+    /// Supports watermark and password protection options.
+    /// </remarks>
+    /// <response code="202">Conversion job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("xlsx-to-pdf")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ConvertXlsxToPdf(
+        [FromBody] XlsxToPdfRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ConvertXlsxToPdfCommand
+        {
+            SpreadsheetData = request.SpreadsheetData,
+            FileName = request.FileName,
+            Options = request.Options,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Conversion Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
+    /// Merges multiple PDF documents into one.
+    /// </summary>
+    /// <param name="request">The merge request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The job details.</returns>
+    /// <remarks>
+    /// PDF documents should be base64 encoded. At least two documents are required.
+    /// </remarks>
+    /// <response code="202">Merge job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("pdf/merge")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> MergePdfs(
+        [FromBody] MergePdfsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new MergePdfsCommand
+        {
+            PdfDocuments = request.PdfDocuments,
+            FileName = request.FileName,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Merge Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
+    /// Splits a PDF document into multiple PDFs.
+    /// </summary>
+    /// <param name="request">The split request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The job details.</returns>
+    /// <remarks>
+    /// PDF data should be base64 encoded. The output is a ZIP file containing the split PDFs.
+    /// You can split by page ranges (e.g., "1-3", "5", "7-10") or into individual pages.
+    /// </remarks>
+    /// <response code="202">Split job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("pdf/split")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> SplitPdf(
+        [FromBody] SplitPdfRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new SplitPdfCommand
+        {
+            PdfData = request.PdfData,
+            FileName = request.FileName,
+            Options = request.Options,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Split Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
+    /// Processes multiple conversions in a single batch request.
+    /// </summary>
+    /// <param name="request">The batch conversion request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The batch conversion results.</returns>
+    /// <remarks>
+    /// Supports up to 20 items per batch. Each item can be a different conversion type:
+    /// html-to-pdf, markdown-to-pdf, markdown-to-html, or image.
+    /// Returns results for each item including job details or error information.
+    /// </remarks>
+    /// <response code="200">Batch processed (may contain individual failures).</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("batch")]
+    [ProducesResponseType(typeof(BatchConversionResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> BatchConvert(
+        [FromBody] BatchConversionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new BatchConversionCommand
+        {
+            Items = request.Items ?? [],
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Batch Conversion Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.Ok(result.Value);
     }
 
     /// <summary>

@@ -36,6 +36,7 @@ public class ConvertMarkdownToHtmlCommandHandlerTests
     private readonly Mock<ICurrentUserService> currentUserServiceMock;
     private readonly Mock<IWebhookService> webhookServiceMock;
     private readonly Mock<IMetricsService> metricsServiceMock;
+    private readonly Mock<ICloudStorageService> cloudStorageServiceMock;
     private readonly Mock<ILogger<ConvertMarkdownToHtmlCommandHandler>> loggerMock;
     private readonly Mock<IFileConverter> fileConverterMock;
     private readonly ConvertMarkdownToHtmlCommandHandler handler;
@@ -51,6 +52,7 @@ public class ConvertMarkdownToHtmlCommandHandlerTests
         this.currentUserServiceMock = new Mock<ICurrentUserService>();
         this.webhookServiceMock = new Mock<IWebhookService>();
         this.metricsServiceMock = new Mock<IMetricsService>();
+        this.cloudStorageServiceMock = new Mock<ICloudStorageService>();
         this.loggerMock = new Mock<ILogger<ConvertMarkdownToHtmlCommandHandler>>();
         this.fileConverterMock = new Mock<IFileConverter>();
 
@@ -61,6 +63,7 @@ public class ConvertMarkdownToHtmlCommandHandlerTests
             this.currentUserServiceMock.Object,
             this.webhookServiceMock.Object,
             this.metricsServiceMock.Object,
+            this.cloudStorageServiceMock.Object,
             this.loggerMock.Object);
     }
 
@@ -385,6 +388,7 @@ public class ConvertMarkdownToHtmlCommandHandlerTests
             this.currentUserServiceMock.Object,
             this.webhookServiceMock.Object,
             this.metricsServiceMock.Object,
+            this.cloudStorageServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
@@ -406,6 +410,7 @@ public class ConvertMarkdownToHtmlCommandHandlerTests
             this.currentUserServiceMock.Object,
             this.webhookServiceMock.Object,
             this.metricsServiceMock.Object,
+            this.cloudStorageServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
@@ -427,6 +432,7 @@ public class ConvertMarkdownToHtmlCommandHandlerTests
             this.currentUserServiceMock.Object,
             this.webhookServiceMock.Object,
             this.metricsServiceMock.Object,
+            this.cloudStorageServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
@@ -448,6 +454,7 @@ public class ConvertMarkdownToHtmlCommandHandlerTests
             null!,
             this.webhookServiceMock.Object,
             this.metricsServiceMock.Object,
+            this.cloudStorageServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
@@ -469,6 +476,7 @@ public class ConvertMarkdownToHtmlCommandHandlerTests
             this.currentUserServiceMock.Object,
             null!,
             this.metricsServiceMock.Object,
+            this.cloudStorageServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
@@ -490,11 +498,34 @@ public class ConvertMarkdownToHtmlCommandHandlerTests
             this.currentUserServiceMock.Object,
             this.webhookServiceMock.Object,
             null!,
+            this.cloudStorageServiceMock.Object,
             this.loggerMock.Object);
 
         // Assert
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("metricsService");
+    }
+
+    /// <summary>
+    /// Tests that constructor throws ArgumentNullException when cloudStorageService is null.
+    /// </summary>
+    [Fact]
+    public void Constructor_WhenCloudStorageServiceIsNull_ThrowsArgumentNullException()
+    {
+        // Act
+        var act = () => new ConvertMarkdownToHtmlCommandHandler(
+            this.jobRepositoryMock.Object,
+            this.unitOfWorkMock.Object,
+            this.converterFactoryMock.Object,
+            this.currentUserServiceMock.Object,
+            this.webhookServiceMock.Object,
+            this.metricsServiceMock.Object,
+            null!,
+            this.loggerMock.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("cloudStorageService");
     }
 
     /// <summary>
@@ -511,6 +542,7 @@ public class ConvertMarkdownToHtmlCommandHandlerTests
             this.currentUserServiceMock.Object,
             this.webhookServiceMock.Object,
             this.metricsServiceMock.Object,
+            this.cloudStorageServiceMock.Object,
             null!);
 
         // Assert

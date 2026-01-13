@@ -39,13 +39,14 @@ FileConversionApi/
 - PuppeteerSharp for HTML to PDF conversion
 - Markdig for Markdown parsing
 - SixLabors.ImageSharp for image format conversions
-- PdfSharpCore for PDF watermarking
+- PdfSharpCore for PDF manipulation (watermarking, password protection, merge/split)
 - MediatR for CQRS pattern
 - FluentValidation for request validation
 - JWT Bearer Authentication
 - ASP.NET Core Rate Limiting (built-in .NET 7+ middleware)
 - Serilog for logging (NOT Microsoft.Extensions.Logging config)
 - prometheus-net for Prometheus metrics
+- OpenTelemetry for distributed tracing
 - Sentry for error tracking
 - Swagger/OpenAPI documentation
 - StyleCop.Analyzers for code style
@@ -187,10 +188,22 @@ Contains:
 - InputFileName (string, not null)
 - OutputFileName (string, nullable)
 - OutputData (byte[], nullable)
+- StorageLocation (int - enum: Database=0, CloudStorage=1)
+- CloudStorageKey (string, nullable, max 1024)
 - ErrorMessage (string, nullable)
 - CreatedAt (DateTimeOffset, not null)
 - CompletedAt (DateTimeOffset, nullable)
 - WebhookUrl (string, nullable) - URL to notify when job completes
+
+### ConversionTemplates Table
+- Id (Guid, PK)
+- UserId (Guid, FK to Users)
+- Name (string, not null, max 100)
+- Description (string, nullable, max 500)
+- TargetFormat (string, not null) - e.g., "pdf", "html", "png"
+- OptionsJson (jsonb, not null) - Serialized ConversionOptions
+- CreatedAt (DateTimeOffset, not null)
+- UpdatedAt (DateTimeOffset, nullable)
 
 ---
 
@@ -204,15 +217,51 @@ Contains:
 
 ### Conversions
 - `POST /api/v1/convert/html-to-pdf` - Convert HTML to PDF (202 Accepted)
+- `POST /api/v1/convert/html-to-image` - Convert HTML/URL to image screenshot (202 Accepted)
+- `POST /api/v1/convert/pdf-to-image` - Convert PDF pages to image (202 Accepted)
+- `POST /api/v1/convert/pdf-to-text` - Extract text from PDF (202 Accepted)
 - `POST /api/v1/convert/markdown-to-pdf` - Convert Markdown to PDF (202 Accepted)
 - `POST /api/v1/convert/markdown-to-html` - Convert Markdown to HTML (202 Accepted)
 - `POST /api/v1/convert/image` - Convert image between formats (202 Accepted)
+- `POST /api/v1/convert/docx-to-pdf` - Convert DOCX to PDF (202 Accepted)
+- `POST /api/v1/convert/xlsx-to-pdf` - Convert XLSX to PDF (202 Accepted)
+- `POST /api/v1/convert/pdf/merge` - Merge multiple PDFs into one (202 Accepted)
+- `POST /api/v1/convert/pdf/split` - Split PDF into multiple files (202 Accepted)
+- `POST /api/v1/convert/batch` - Batch convert multiple files in one request (200 OK)
 - `GET /api/v1/convert/{jobId}` - Get conversion job status (200 OK / 404 Not Found)
 - `GET /api/v1/convert/{jobId}/download` - Download converted file (200 OK / 404 Not Found)
 - `GET /api/v1/convert/history` - Get user's conversion history (200 OK, paginated)
 
 ### Health
 - `GET /health` - Health check endpoint (200 OK)
+
+### Templates
+- `GET /api/v1/templates` - List user's templates (optional ?targetFormat= filter)
+- `GET /api/v1/templates/{id}` - Get template details
+- `POST /api/v1/templates` - Create new template
+- `PUT /api/v1/templates/{id}` - Update template
+- `DELETE /api/v1/templates/{id}` - Delete template
+
+### Usage Quotas
+- `GET /api/v1/quota` - Get current user's quota (200 OK)
+
+### Admin (requires Admin role)
+- `GET /api/v1/admin/users` - List all users (paginated)
+- `GET /api/v1/admin/users/{id}` - Get user details
+- `POST /api/v1/admin/users/{id}/disable` - Disable a user
+- `POST /api/v1/admin/users/{id}/enable` - Enable a user
+- `POST /api/v1/admin/users/{id}/reset-api-key` - Reset user's API key
+- `POST /api/v1/admin/users/{id}/grant-admin` - Grant admin privileges
+- `POST /api/v1/admin/users/{id}/revoke-admin` - Revoke admin privileges
+- `GET /api/v1/admin/users/{id}/quota` - Get user's current quota
+- `GET /api/v1/admin/users/{id}/quota/history` - Get user's quota history
+- `PUT /api/v1/admin/users/{id}/quota` - Update user's quota limits
+- `GET /api/v1/admin/users/{id}/rate-limits` - Get user's rate limit settings
+- `PUT /api/v1/admin/users/{id}/rate-limits/tier` - Set user's rate limit tier
+- `PUT /api/v1/admin/users/{id}/rate-limits/override/{policy}` - Set per-policy override
+- `DELETE /api/v1/admin/users/{id}/rate-limits/overrides` - Clear all overrides
+- `GET /api/v1/admin/rate-limits/tiers` - List available rate limit tiers
+- `GET /api/v1/admin/stats` - Get job statistics
 
 ---
 
@@ -326,6 +375,405 @@ POST /api/v1/convert/image
   }
 }
 ```
+
+### HTML to Image Converter
+
+Capture HTML content or URLs as screenshots using PuppeteerSharp (headless Chromium).
+
+**Supported Output Formats:**
+- PNG (default)
+- JPEG
+- WebP
+
+**Features:**
+- Full page capture or viewport-only
+- Configurable viewport dimensions
+- JavaScript execution before capture
+- URL or inline HTML content
+
+**Screenshot-specific ConversionOptions:**
+- `FullPage` - Capture full scrollable page (default: true)
+- `ViewportWidth` - Viewport width in pixels (default: 1920)
+- `ViewportHeight` - Viewport height in pixels (default: 1080)
+
+**API Request Examples:**
+
+HTML to PNG:
+```json
+POST /api/v1/convert/html-to-image
+{
+  "htmlContent": "<html><body><h1>Hello World</h1></body></html>",
+  "fileName": "screenshot.html",
+  "targetFormat": "png",
+  "options": {
+    "fullPage": true,
+    "viewportWidth": 1920,
+    "viewportHeight": 1080
+  }
+}
+```
+
+URL to JPEG:
+```json
+POST /api/v1/convert/html-to-image
+{
+  "url": "https://example.com",
+  "fileName": "webpage.html",
+  "targetFormat": "jpeg",
+  "options": {
+    "fullPage": false,
+    "viewportWidth": 1280,
+    "viewportHeight": 720
+  }
+}
+```
+
+**Implementation:** Uses `HtmlToImageConverter` class with PuppeteerSharp's `ScreenshotDataAsync` method. Converters are registered for each supported output format (png, jpeg, webp).
+
+---
+
+### PDF to Image Converter
+
+Render PDF pages to PNG, JPEG, or WebP images using PDFtoImage (PDFium wrapper).
+
+**Supported Output Formats:** PNG, JPEG, WebP
+
+**Features:**
+- High-quality PDF rendering using PDFium
+- Configurable DPI (72-600)
+- Single page or all pages conversion
+- Password-protected PDF support
+- Multi-page PDFs return a ZIP file
+
+**ConversionOptions for PDF to Image:**
+- `Dpi` - Resolution in dots per inch (default: 150)
+- `PageNumber` - Specific page to render, 1-based (null = all pages)
+- `PdfPassword` - Password for encrypted PDFs
+- `ImageQuality` - Output quality 1-100 for JPEG/WebP (default: 90)
+
+**API Request Examples:**
+
+Single page to PNG:
+```json
+POST /api/v1/convert/pdf-to-image
+{
+  "pdfData": "JVBERi0xLjQN...",
+  "fileName": "document.pdf",
+  "targetFormat": "png",
+  "options": {
+    "dpi": 300,
+    "pageNumber": 1
+  }
+}
+```
+
+All pages to JPEG (returns ZIP):
+```json
+POST /api/v1/convert/pdf-to-image
+{
+  "pdfData": "JVBERi0xLjQN...",
+  "fileName": "document.pdf",
+  "targetFormat": "jpeg",
+  "options": {
+    "dpi": 150,
+    "imageQuality": 85
+  }
+}
+```
+
+Password-protected PDF:
+```json
+POST /api/v1/convert/pdf-to-image
+{
+  "pdfData": "JVBERi0xLjQN...",
+  "fileName": "secure.pdf",
+  "targetFormat": "webp",
+  "options": {
+    "pdfPassword": "secret123",
+    "pageNumber": 1
+  }
+}
+```
+
+**Implementation:** Uses `PdfToImageConverter` class with PDFtoImage library (PDFium wrapper) and SkiaSharp for image encoding. Converters are registered for each supported output format (png, jpeg, webp).
+
+---
+
+### PDF Text Extraction
+
+Extract text content from PDF documents using PdfPig library.
+
+**Features:**
+- Extract text from all pages or a specific page
+- Password-protected PDF support
+- Preserves paragraph structure and word order
+- Multi-page PDFs include page separators
+
+**API Request Example:**
+
+All pages:
+```json
+POST /api/v1/convert/pdf-to-text
+{
+  "pdfData": "JVBERi0xLjQN...",
+  "fileName": "document.pdf"
+}
+```
+
+Single page with password:
+```json
+POST /api/v1/convert/pdf-to-text
+{
+  "pdfData": "JVBERi0xLjQN...",
+  "fileName": "document.pdf",
+  "pageNumber": 2,
+  "password": "secret123"
+}
+```
+
+**Request Parameters:**
+- `pdfData` (required) - Base64 encoded PDF content
+- `fileName` (optional) - Output file name (defaults to document_timestamp.pdf)
+- `pageNumber` (optional) - Specific page to extract (1-based). If null, extracts all pages
+- `password` (optional) - Password for encrypted PDFs
+- `webhookUrl` (optional) - URL to notify when extraction completes
+
+**Response:**
+- Returns a plain text (.txt) file with extracted content
+- Multi-page extractions include `--- Page N ---` separators
+
+**Implementation:** Uses `PdfTextExtractor` service with PdfPig library (Apache 2.0 licensed) for accurate text extraction.
+
+---
+
+### Office Document Converters
+
+Convert Microsoft Office documents to PDF using LibreOffice headless mode:
+
+**Supported Formats:**
+- DOCX (Microsoft Word)
+- XLSX (Microsoft Excel)
+
+**Features:**
+- Headless conversion via LibreOffice
+- Automatic temp directory management
+- Configurable timeout
+- Watermark support for PDF output
+- Password protection support for PDF output
+
+**LibreOffice Settings:**
+- `ExecutablePath` - Path to soffice executable (auto-detected if empty)
+- `TimeoutMs` - Conversion timeout in milliseconds (default: 60000)
+- `TempDirectory` - Temp directory for conversion files (auto-created if empty)
+
+**API Request Examples:**
+
+DOCX to PDF:
+```json
+POST /api/v1/convert/docx-to-pdf
+{
+  "documentData": "UEsDBBQAAAAI...",
+  "fileName": "document.docx",
+  "options": {
+    "watermark": {
+      "text": "CONFIDENTIAL"
+    }
+  }
+}
+```
+
+XLSX to PDF:
+```json
+POST /api/v1/convert/xlsx-to-pdf
+{
+  "spreadsheetData": "UEsDBBQAAAAI...",
+  "fileName": "spreadsheet.xlsx",
+  "options": {
+    "passwordProtection": {
+      "userPassword": "secret123"
+    }
+  }
+}
+```
+
+**Implementation:** Uses `OfficeConverterBase` abstract class with shared watermark/encryption logic.
+
+### PDF Watermarking
+
+Add text watermarks to PDF output by including `watermark` options in any PDF conversion request.
+
+**Watermark Options:**
+- `Text` - Watermark text (required)
+- `FontSize` - Font size in points (default: 48)
+- `FontFamily` - Font family name (default: "Helvetica")
+- `Color` - Hex color (default: "#808080")
+- `Opacity` - 0.0 to 1.0 (default: 0.3)
+- `Rotation` - Angle in degrees (default: -45)
+- `Position` - Center, TopLeft, TopCenter, TopRight, BottomLeft, BottomCenter, BottomRight, Tile
+- `AllPages` - Apply to all pages (default: true)
+- `PageNumbers` - Specific pages if AllPages is false
+
+**Implementation:** Uses PdfSharpCore to overlay text on PDF pages.
+
+### PDF Password Protection
+
+Encrypt PDF output with passwords and permissions using PdfSharpCore.
+
+**Password Protection Options:**
+- `UserPassword` - Password to open/view the PDF (required)
+- `OwnerPassword` - Password for full access (defaults to UserPassword)
+- `AllowPrinting` - Allow printing (default: true)
+- `AllowCopyingContent` - Allow copying text/images (default: true)
+- `AllowModifying` - Allow document modification (default: false)
+- `AllowAnnotations` - Allow adding annotations (default: false)
+
+**Implementation:** Applied after watermarking in the conversion pipeline.
+
+### PDF Merge and Split
+
+Combine or separate PDF documents using PdfSharpCore.
+
+**Merge:**
+- `POST /api/v1/convert/pdf/merge`
+- Accepts array of base64-encoded PDFs
+- Returns single merged PDF
+
+**Split:**
+- `POST /api/v1/convert/pdf/split`
+- Accepts single base64-encoded PDF
+- Options: `PageRanges` (e.g., "1-3", "5") or `SplitIntoSinglePages`
+- Returns ZIP file containing split PDFs
+
+### Batch Conversions
+
+Process multiple conversion requests in a single API call.
+
+**Endpoint:** `POST /api/v1/convert/batch`
+
+**Request:**
+```json
+{
+  "items": [
+    {
+      "type": "html-to-pdf",
+      "htmlContent": "<html>...</html>",
+      "fileName": "doc1.html",
+      "options": { "pageSize": "A4" }
+    },
+    {
+      "type": "markdown-to-pdf",
+      "markdown": "# Title",
+      "fileName": "doc2.md"
+    },
+    {
+      "type": "image",
+      "imageData": "base64...",
+      "sourceFormat": "png",
+      "targetFormat": "jpeg"
+    }
+  ],
+  "webhookUrl": "https://example.com/webhook"
+}
+```
+
+**Supported types:** `html-to-pdf`, `markdown-to-pdf`, `markdown-to-html`, `image`
+
+**Response (200 OK):**
+```json
+{
+  "totalItems": 3,
+  "successCount": 2,
+  "failureCount": 1,
+  "results": [
+    { "index": 0, "success": true, "job": { ... } },
+    { "index": 1, "success": true, "job": { ... } },
+    { "index": 2, "success": false, "errorCode": "...", "errorMessage": "..." }
+  ]
+}
+```
+
+**Limits:**
+- Maximum batch size: 20 items
+- Each item is processed sequentially
+- Partial success/failure is supported
+
+---
+
+## Conversion Templates
+
+Save and reuse conversion settings for consistent output across multiple conversions.
+
+### Features
+
+- Create named templates with predefined conversion options
+- Filter templates by target format
+- Templates are user-scoped (private to each user)
+- Supports all conversion options (page size, margins, watermarks, etc.)
+
+### Template Entity
+
+```csharp
+public class ConversionTemplate
+{
+    public ConversionTemplateId Id { get; }
+    public UserId UserId { get; }
+    public string Name { get; }
+    public string? Description { get; }
+    public string TargetFormat { get; }  // pdf, html, png, jpeg, webp, gif, bmp
+    public string OptionsJson { get; }   // Serialized ConversionOptions
+    public DateTimeOffset CreatedAt { get; }
+    public DateTimeOffset? UpdatedAt { get; }
+}
+```
+
+### API Examples
+
+**Create Template:**
+```json
+POST /api/v1/templates
+{
+  "name": "A4 Landscape Report",
+  "description": "Standard report format with company watermark",
+  "targetFormat": "pdf",
+  "options": {
+    "pageSize": "A4",
+    "landscape": true,
+    "marginTop": 25,
+    "marginBottom": 25,
+    "watermark": {
+      "text": "CONFIDENTIAL",
+      "opacity": 0.2
+    }
+  }
+}
+```
+
+**List Templates:**
+```json
+GET /api/v1/templates?targetFormat=pdf
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "A4 Landscape Report",
+    "description": "Standard report format with company watermark",
+    "targetFormat": "pdf",
+    "options": { ... },
+    "createdAt": "2026-01-13T12:00:00Z"
+  }
+]
+```
+
+### Supported Target Formats
+
+| Format | Description |
+|--------|-------------|
+| `pdf` | PDF document options (page size, margins, watermark, password) |
+| `html` | HTML output options |
+| `png` | PNG image options (width, height) |
+| `jpeg` | JPEG image options (width, height, quality) |
+| `webp` | WebP image options (width, height, quality) |
+| `gif` | GIF image options (width, height) |
+| `bmp` | BMP image options (width, height) |
 
 ---
 
@@ -790,6 +1238,160 @@ Unit tests should verify:
 - Batch size limits are respected
 - Completed and failed jobs have different retention periods
 - Service handles empty database gracefully
+
+---
+
+## Cloud Storage Integration
+
+Store conversion outputs in S3-compatible storage instead of the PostgreSQL database for improved scalability and cost-effectiveness.
+
+### Strategy
+
+Use AWSSDK.S3 to upload conversion outputs to S3-compatible storage (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2). The feature is backward compatible - existing jobs with database storage continue to work when cloud storage is disabled.
+
+### Configuration
+
+```json
+{
+  "CloudStorage": {
+    "Enabled": false,
+    "ServiceUrl": "https://s3.amazonaws.com",
+    "BucketName": "file-conversion-outputs",
+    "AccessKey": "",
+    "SecretKey": "",
+    "Region": "us-east-1",
+    "ForcePathStyle": false,
+    "PresignedUrlExpirationMinutes": 60
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Enabled` | false | Enable/disable cloud storage (false = use database) |
+| `ServiceUrl` | https://s3.amazonaws.com | S3 endpoint URL |
+| `BucketName` | file-conversion-outputs | Storage bucket name |
+| `AccessKey` | | AWS/S3 access key |
+| `SecretKey` | | AWS/S3 secret key |
+| `Region` | us-east-1 | AWS region |
+| `ForcePathStyle` | false | Use path-style URLs (required for MinIO) |
+| `PresignedUrlExpirationMinutes` | 60 | Presigned URL expiration time |
+
+### S3-Compatible Providers
+
+| Provider | ServiceUrl Example | ForcePathStyle |
+|----------|-------------------|----------------|
+| AWS S3 | https://s3.amazonaws.com | false |
+| MinIO | http://localhost:9000 | true |
+| DigitalOcean Spaces | https://nyc3.digitaloceanspaces.com | false |
+| Cloudflare R2 | https://account-id.r2.cloudflarestorage.com | false |
+
+### Interface
+
+```csharp
+// Application/Interfaces/ICloudStorageService.cs
+public interface ICloudStorageService
+{
+    bool IsEnabled { get; }
+    Task<Result<string>> UploadAsync(byte[] data, string key, string contentType, CancellationToken ct);
+    Task<Result<byte[]>> DownloadAsync(string key, CancellationToken ct);
+    Task<Result> DeleteAsync(string key, CancellationToken ct);
+}
+```
+
+### Entity Changes
+
+The `ConversionJob` entity is extended with:
+- `StorageLocation` enum property (Database=0, CloudStorage=1)
+- `CloudStorageKey` string property for the S3 object key
+- `MarkAsCompletedWithCloudStorage(outputFileName, cloudStorageKey)` method
+
+### Command Handler Pattern
+
+```csharp
+// After successful conversion
+if (this.cloudStorageService.IsEnabled)
+{
+    var storageKey = $"{userId.Value.Value}/{job.Id.Value}/{outputFileName}";
+    var uploadResult = await this.cloudStorageService.UploadAsync(
+        conversionResult.Value, storageKey, contentType, cancellationToken);
+
+    if (uploadResult.IsFailure)
+    {
+        job.MarkAsFailed($"Cloud storage upload failed: {uploadResult.Error.Message}");
+        // ... save and return error
+    }
+
+    job.MarkAsCompletedWithCloudStorage(outputFileName, storageKey);
+}
+else
+{
+    job.MarkAsCompleted(outputFileName, conversionResult.Value);
+}
+```
+
+### Download Handler Pattern
+
+```csharp
+byte[] content;
+if (job.StorageLocation == StorageLocation.CloudStorage)
+{
+    var downloadResult = await this.cloudStorageService.DownloadAsync(
+        job.CloudStorageKey!, cancellationToken);
+
+    if (downloadResult.IsFailure)
+        return downloadResult.Error;
+
+    content = downloadResult.Value;
+}
+else
+{
+    content = job.OutputData!;
+}
+```
+
+### Job Cleanup Integration
+
+The `JobCleanupService` automatically deletes cloud storage objects before removing expired jobs:
+
+```csharp
+foreach (var job in expiredJobs.Where(j =>
+    j.StorageLocation == StorageLocation.CloudStorage &&
+    !string.IsNullOrEmpty(j.CloudStorageKey)))
+{
+    await this.cloudStorageService.DeleteAsync(job.CloudStorageKey!, cancellationToken);
+}
+```
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `Domain/Enums/StorageLocation.cs` | Create enum |
+| `Domain/Entities/ConversionJob.cs` | Add StorageLocation, CloudStorageKey, MarkAsCompletedWithCloudStorage |
+| `Application/Interfaces/ICloudStorageService.cs` | Create interface |
+| `Infrastructure/Options/CloudStorageSettings.cs` | Create settings class |
+| `Infrastructure/Services/CloudStorageService.cs` | Create S3 implementation |
+| `Infrastructure/Persistence/Configurations/ConversionJobConfiguration.cs` | Configure new columns |
+| `Application/Queries/Conversion/DownloadConversionResultQueryHandler.cs` | Handle cloud storage download |
+| `Application/Commands/Conversion/*CommandHandler.cs` | Add cloud storage upload |
+| `Infrastructure/Services/JobCleanupService.cs` | Delete cloud objects before job removal |
+| `Infrastructure/DependencyInjection.cs` | Register CloudStorageService and settings |
+| `appsettings.json` | Add CloudStorage section |
+
+### Testing
+
+Unit tests should verify:
+- Service returns disabled error when cloud storage is disabled
+- IsEnabled returns correct value based on settings
+- Upload succeeds with valid settings
+- Download succeeds with valid key
+- Delete succeeds with valid key
+- Command handlers use cloud storage when enabled
+- Command handlers use database when disabled
+- Download handler retrieves from cloud storage for cloud-stored jobs
+- Download handler retrieves from database for database-stored jobs
+- Cleanup service deletes cloud objects before removing jobs
 
 ---
 
@@ -1356,6 +1958,11 @@ finally
     "ExecutablePath": null,
     "Timeout": 30000
   },
+  "LibreOfficeSettings": {
+    "ExecutablePath": "",
+    "TimeoutMs": 60000,
+    "TempDirectory": ""
+  },
   "WebhookSettings": {
     "TimeoutSeconds": 30,
     "MaxRetries": 3,
@@ -1367,6 +1974,41 @@ finally
   "Serilog": { ... },
   "Sentry": {
     "Dsn": ""
+  },
+  "OpenTelemetry": {
+    "EnableTracing": true,
+    "ServiceName": "FileConversionApi",
+    "OtlpEndpoint": "http://localhost:4317",
+    "ExportToConsole": false,
+    "SamplingRatio": 1.0
+  },
+  "InputValidation": {
+    "Enabled": true,
+    "MaxFileSizeBytes": 52428800,
+    "MaxHtmlContentBytes": 10485760,
+    "MaxMarkdownContentBytes": 5242880,
+    "UrlValidation": {
+      "Enabled": true,
+      "UseAllowlist": false,
+      "BlockPrivateIpAddresses": true,
+      "Blocklist": ["localhost", "127.0.0.1", "10.*", "192.168.*"]
+    },
+    "ContentTypeValidation": {
+      "Enabled": true,
+      "AllowedHtmlContentTypes": ["text/html", "text/plain"],
+      "AllowedMarkdownContentTypes": ["text/markdown", "text/plain"],
+      "AllowedImageContentTypes": ["image/jpeg", "image/png", "image/webp"]
+    }
+  },
+  "CloudStorage": {
+    "Enabled": false,
+    "ServiceUrl": "https://s3.amazonaws.com",
+    "BucketName": "file-conversion-outputs",
+    "AccessKey": "",
+    "SecretKey": "",
+    "Region": "us-east-1",
+    "ForcePathStyle": false,
+    "PresignedUrlExpirationMinutes": 60
   }
 }
 ```
@@ -1391,6 +2033,86 @@ Create `docker-compose.yml` for local development with:
 
 ---
 
+## Admin User Seeding
+
+Seed a default admin user on application startup for initial setup and development.
+
+### Strategy
+
+Create a hosted service that seeds a default admin user when the application starts. This ensures there's always an admin account available for initial access, especially in development environments.
+
+### Configuration
+
+The admin seeding feature is configured via `AdminSeed` section in appsettings.json:
+
+```json
+{
+  "AdminSeed": {
+    "Enabled": true,
+    "Email": "admin@fileconversionapi.local",
+    "Password": "Admin123!",
+    "SkipIfAdminExists": true
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Enabled` | `true` | Enable/disable admin seeding |
+| `Email` | `admin@fileconversionapi.local` | Default admin email address |
+| `Password` | `Admin123!` | Default admin password (change in production!) |
+| `SkipIfAdminExists` | `true` | Skip seeding if any admin user already exists |
+
+### Security Considerations
+
+- **Change default password in production** - Use environment variables: `AdminSeed__Password`
+- **Disable after initial setup** - Set `Enabled: false` after creating the first admin
+- **SkipIfAdminExists** - Prevents overwriting existing admin accounts
+
+### Implementation
+
+```csharp
+// Infrastructure/Options/AdminSeedSettings.cs
+public class AdminSeedSettings
+{
+    public const string SectionName = "AdminSeed";
+    public bool Enabled { get; set; } = true;
+    public string Email { get; set; } = "admin@fileconversionapi.local";
+    public string Password { get; set; } = "Admin123!";
+    public bool SkipIfAdminExists { get; set; } = true;
+}
+
+// Infrastructure/Services/AdminSeederService.cs - IHostedService implementation
+// - Checks if seeding is enabled
+// - Checks if admin already exists (when SkipIfAdminExists is true)
+// - Creates admin user with hashed password and admin privileges
+```
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `Infrastructure/Options/AdminSeedSettings.cs` | Create settings class |
+| `Infrastructure/Services/AdminSeederService.cs` | Create hosted service |
+| `Application/Interfaces/IUserRepository.cs` | Add AnyAdminExistsAsync method |
+| `Infrastructure/Persistence/Repositories/UserRepository.cs` | Implement AnyAdminExistsAsync |
+| `Infrastructure/DependencyInjection.cs` | Register settings and hosted service |
+| `appsettings.json` | Add AdminSeed configuration section |
+| `appsettings.Development.json` | Add AdminSeed with development defaults |
+
+### Testing
+
+Unit tests should verify:
+- Seeding is skipped when disabled
+- Seeding is skipped when admin already exists (SkipIfAdminExists=true)
+- Admin user is created with correct email and admin privileges
+- Password is hashed before storing
+- Seeding continues even when SkipIfAdminExists=false
+- Seeding is skipped when email already exists
+- Exceptions are handled gracefully
+
+---
+
 ## Completion Criteria
 
 The task is COMPLETE when ALL of the following are true:
@@ -1408,16 +2130,26 @@ The task is COMPLETE when ALL of the following are true:
 11. ✅ Markdown to PDF conversion works with Markdig + PuppeteerSharp
 12. ✅ Markdown to HTML conversion works with Markdig
 13. ✅ Image format conversions work with ImageSharp (PNG, JPEG, WebP)
-14. ✅ PDF watermarking works with PdfSharpCore
-15. ✅ Webhook notifications work for completed/failed jobs
-15. ✅ JWT + API Key authentication functional
-16. ✅ Rate limiting implemented with per-user and per-endpoint policies
-17. ✅ Job cleanup service auto-deletes expired jobs
-18. ✅ Health checks report detailed component status (DB, Chromium, disk)
-19. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
-20. ✅ Unit tests exist with 80%+ coverage
-21. ✅ docker-compose.yml exists and works
-22. ✅ README.md documents how to run the project
+14. ✅ HTML to image screenshot conversion works with PuppeteerSharp (PNG, JPEG, WebP)
+15. ✅ PDF watermarking works with PdfSharpCore
+16. ✅ PDF password protection works with PdfSharpCore
+17. ✅ PDF merge/split works with PdfSharpCore
+18. ✅ Webhook notifications work for completed/failed jobs
+19. ✅ JWT + API Key authentication functional
+20. ✅ Rate limiting implemented with per-user and per-endpoint policies
+21. ✅ Job cleanup service auto-deletes expired jobs
+22. ✅ Health checks report detailed component status (DB, Chromium, disk)
+23. ✅ Prometheus metrics endpoint exposes conversion and HTTP metrics
+24. ✅ Unit tests exist with 80%+ coverage
+25. ✅ docker-compose.yml exists and works
+26. ✅ README.md documents how to run the project
+27. ✅ Batch conversions work (multiple files in single request)
+28. ✅ Admin API for user management and statistics
+29. ✅ Conversion templates CRUD for saving/reusing settings
+30. ✅ OpenTelemetry tracing for distributed tracing and observability
+31. ✅ Input validation with configurable file size limits, URL allowlist/blocklist, content type validation
+32. ✅ Admin user seeding on startup for initial setup
+33. ✅ Cloud storage integration for S3-compatible storage (AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2)
 
 ---
 
