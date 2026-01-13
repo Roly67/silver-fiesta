@@ -98,4 +98,19 @@ public class ConversionOptions
     /// Gets or sets the password protection options for PDF output.
     /// </summary>
     public PasswordProtectionOptions? PasswordProtection { get; set; }
+
+    /// <summary>
+    /// Gets or sets the DPI (dots per inch) for PDF to image rendering.
+    /// </summary>
+    public int Dpi { get; set; } = 150;
+
+    /// <summary>
+    /// Gets or sets the specific page number to convert (1-based). If null, all pages are converted.
+    /// </summary>
+    public int? PageNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the password for opening password-protected PDFs.
+    /// </summary>
+    public string? PdfPassword { get; set; }
 }

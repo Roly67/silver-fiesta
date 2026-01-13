@@ -225,6 +225,58 @@ public class ConvertController : ControllerBase
     }
 
     /// <summary>
+    /// Converts PDF pages to images (PNG, JPEG, or WebP).
+    /// </summary>
+    /// <param name="request">The conversion request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The conversion job details.</returns>
+    /// <remarks>
+    /// Renders PDF pages as images using PDFium.
+    /// Supported output formats: png, jpeg, webp.
+    /// Single page: returns image file. Multiple pages: returns ZIP file.
+    /// Options include DPI, page number selection, and PDF password.
+    /// </remarks>
+    /// <response code="202">Conversion job accepted.</response>
+    /// <response code="400">Invalid request.</response>
+    /// <response code="401">Unauthorized.</response>
+    [HttpPost("pdf-to-image")]
+    [ProducesResponseType(typeof(ConversionJobDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetailsResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ConvertPdfToImage(
+        [FromBody] PdfToImageRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ConvertPdfToImageCommand
+        {
+            PdfData = request.PdfData,
+            FileName = request.FileName,
+            TargetFormat = request.TargetFormat,
+            Options = request.Options,
+            WebhookUrl = request.WebhookUrl,
+        };
+
+        var result = await this.mediator.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.BadRequest(new ProblemDetailsResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Conversion Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Error.Message,
+                ErrorCode = result.Error.Code,
+            });
+        }
+
+        return this.AcceptedAtAction(
+            nameof(this.GetJob),
+            new { jobId = result.Value.Id },
+            result.Value);
+    }
+
+    /// <summary>
     /// Converts an image between formats.
     /// </summary>
     /// <param name="request">The conversion request.</param>

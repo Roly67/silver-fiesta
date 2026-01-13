@@ -30,7 +30,7 @@
 <td width="50%">
 
 ### 🔄 Document Conversion
-Convert HTML, Markdown, or URLs to PDF. Convert Markdown to HTML. Convert DOCX (Word) and XLSX (Excel) to PDF using LibreOffice. Capture HTML pages or URLs as PNG, JPEG, or WebP screenshots. Transform images between PNG, JPEG, and WebP formats with resize and quality options.
+Convert HTML, Markdown, or URLs to PDF. Convert Markdown to HTML. Convert DOCX (Word) and XLSX (Excel) to PDF using LibreOffice. Capture HTML pages or URLs as PNG, JPEG, or WebP screenshots. Render PDF pages to PNG, JPEG, or WebP images. Transform images between PNG, JPEG, and WebP formats with resize and quality options.
 
 </td>
 <td width="50%">
@@ -371,6 +371,11 @@ X-API-Key: your-api-key-here
 <td><code>POST</code></td>
 <td><code>/api/v1/convert/html-to-image</code></td>
 <td>Convert HTML/URL to image (PNG, JPEG, WebP)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/convert/pdf-to-image</code></td>
+<td>Convert PDF pages to image (PNG, JPEG, WebP)</td>
 </tr>
 <tr>
 <td><code>POST</code></td>
@@ -731,6 +736,48 @@ Content-Type: application/json
 - Uses Puppeteer (headless Chromium) for rendering
 - JavaScript is executed before capture
 - Can be combined with webhook notifications for async processing
+
+</details>
+
+<details>
+<summary><strong>Convert PDF to Image</strong></summary>
+
+Render PDF pages to PNG, JPEG, or WebP images:
+
+```json
+POST /api/v1/convert/pdf-to-image
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "pdfData": "base64-encoded-pdf-data",
+  "fileName": "document.pdf",
+  "targetFormat": "png",
+  "webhookUrl": "https://example.com/webhooks/conversion",
+  "options": {
+    "dpi": 150,
+    "pageNumber": 1,
+    "pdfPassword": "optional-password",
+    "imageQuality": 90
+  }
+}
+```
+
+**Supported output formats:** PNG (default), JPEG, WebP
+
+**Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `dpi` | int | 150 | Resolution in dots per inch (72-600) |
+| `pageNumber` | int | null | Specific page to render (1-based). If null, all pages are rendered |
+| `pdfPassword` | string | null | Password for encrypted PDFs |
+| `imageQuality` | int | 90 | Output quality (1-100, for JPEG/WebP) |
+
+**Notes:**
+- Single page PDFs or requests with `pageNumber` return an image file
+- Multi-page PDFs (without `pageNumber`) return a ZIP file containing all pages
+- Pages are named `page_0001.{format}`, `page_0002.{format}`, etc.
+- Uses PDFtoImage (PDFium) for high-quality rendering
 
 </details>
 
