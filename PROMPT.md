@@ -218,6 +218,7 @@ Contains:
 ### Conversions
 - `POST /api/v1/convert/html-to-pdf` - Convert HTML to PDF (202 Accepted)
 - `POST /api/v1/convert/html-to-image` - Convert HTML/URL to image screenshot (202 Accepted)
+- `POST /api/v1/convert/pdf-to-image` - Convert PDF pages to image (202 Accepted)
 - `POST /api/v1/convert/markdown-to-pdf` - Convert Markdown to PDF (202 Accepted)
 - `POST /api/v1/convert/markdown-to-html` - Convert Markdown to HTML (202 Accepted)
 - `POST /api/v1/convert/image` - Convert image between formats (202 Accepted)
@@ -427,6 +428,73 @@ POST /api/v1/convert/html-to-image
 ```
 
 **Implementation:** Uses `HtmlToImageConverter` class with PuppeteerSharp's `ScreenshotDataAsync` method. Converters are registered for each supported output format (png, jpeg, webp).
+
+---
+
+### PDF to Image Converter
+
+Render PDF pages to PNG, JPEG, or WebP images using PDFtoImage (PDFium wrapper).
+
+**Supported Output Formats:** PNG, JPEG, WebP
+
+**Features:**
+- High-quality PDF rendering using PDFium
+- Configurable DPI (72-600)
+- Single page or all pages conversion
+- Password-protected PDF support
+- Multi-page PDFs return a ZIP file
+
+**ConversionOptions for PDF to Image:**
+- `Dpi` - Resolution in dots per inch (default: 150)
+- `PageNumber` - Specific page to render, 1-based (null = all pages)
+- `PdfPassword` - Password for encrypted PDFs
+- `ImageQuality` - Output quality 1-100 for JPEG/WebP (default: 90)
+
+**API Request Examples:**
+
+Single page to PNG:
+```json
+POST /api/v1/convert/pdf-to-image
+{
+  "pdfData": "JVBERi0xLjQN...",
+  "fileName": "document.pdf",
+  "targetFormat": "png",
+  "options": {
+    "dpi": 300,
+    "pageNumber": 1
+  }
+}
+```
+
+All pages to JPEG (returns ZIP):
+```json
+POST /api/v1/convert/pdf-to-image
+{
+  "pdfData": "JVBERi0xLjQN...",
+  "fileName": "document.pdf",
+  "targetFormat": "jpeg",
+  "options": {
+    "dpi": 150,
+    "imageQuality": 85
+  }
+}
+```
+
+Password-protected PDF:
+```json
+POST /api/v1/convert/pdf-to-image
+{
+  "pdfData": "JVBERi0xLjQN...",
+  "fileName": "secure.pdf",
+  "targetFormat": "webp",
+  "options": {
+    "pdfPassword": "secret123",
+    "pageNumber": 1
+  }
+}
+```
+
+**Implementation:** Uses `PdfToImageConverter` class with PDFtoImage library (PDFium wrapper) and SkiaSharp for image encoding. Converters are registered for each supported output format (png, jpeg, webp).
 
 ---
 

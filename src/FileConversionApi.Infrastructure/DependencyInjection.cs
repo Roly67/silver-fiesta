@@ -105,6 +105,19 @@ public static class DependencyInjection
             "webp",
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<HtmlToImageConverter>>()));
 
+        // PDF to Image converters (PDFtoImage supports Windows, Linux, macOS, Android 31+)
+#pragma warning disable CA1416
+        services.AddSingleton<IFileConverter>(sp => new PdfToImageConverter(
+            "png",
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<PdfToImageConverter>>()));
+        services.AddSingleton<IFileConverter>(sp => new PdfToImageConverter(
+            "jpeg",
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<PdfToImageConverter>>()));
+        services.AddSingleton<IFileConverter>(sp => new PdfToImageConverter(
+            "webp",
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<PdfToImageConverter>>()));
+#pragma warning restore CA1416
+
         services.AddSingleton<IConverterFactory, ConverterFactory>();
 
         // Health Checks
