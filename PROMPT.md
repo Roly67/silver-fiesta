@@ -218,6 +218,8 @@ Contains:
 - `POST /api/v1/convert/markdown-to-pdf` - Convert Markdown to PDF (202 Accepted)
 - `POST /api/v1/convert/markdown-to-html` - Convert Markdown to HTML (202 Accepted)
 - `POST /api/v1/convert/image` - Convert image between formats (202 Accepted)
+- `POST /api/v1/convert/docx-to-pdf` - Convert DOCX to PDF (202 Accepted)
+- `POST /api/v1/convert/xlsx-to-pdf` - Convert XLSX to PDF (202 Accepted)
 - `POST /api/v1/convert/pdf/merge` - Merge multiple PDFs into one (202 Accepted)
 - `POST /api/v1/convert/pdf/split` - Split PDF into multiple files (202 Accepted)
 - `POST /api/v1/convert/batch` - Batch convert multiple files in one request (200 OK)
@@ -368,6 +370,58 @@ POST /api/v1/convert/image
   }
 }
 ```
+
+### Office Document Converters
+
+Convert Microsoft Office documents to PDF using LibreOffice headless mode:
+
+**Supported Formats:**
+- DOCX (Microsoft Word)
+- XLSX (Microsoft Excel)
+
+**Features:**
+- Headless conversion via LibreOffice
+- Automatic temp directory management
+- Configurable timeout
+- Watermark support for PDF output
+- Password protection support for PDF output
+
+**LibreOffice Settings:**
+- `ExecutablePath` - Path to soffice executable (auto-detected if empty)
+- `TimeoutMs` - Conversion timeout in milliseconds (default: 60000)
+- `TempDirectory` - Temp directory for conversion files (auto-created if empty)
+
+**API Request Examples:**
+
+DOCX to PDF:
+```json
+POST /api/v1/convert/docx-to-pdf
+{
+  "documentData": "UEsDBBQAAAAI...",
+  "fileName": "document.docx",
+  "options": {
+    "watermark": {
+      "text": "CONFIDENTIAL"
+    }
+  }
+}
+```
+
+XLSX to PDF:
+```json
+POST /api/v1/convert/xlsx-to-pdf
+{
+  "spreadsheetData": "UEsDBBQAAAAI...",
+  "fileName": "spreadsheet.xlsx",
+  "options": {
+    "passwordProtection": {
+      "userPassword": "secret123"
+    }
+  }
+}
+```
+
+**Implementation:** Uses `OfficeConverterBase` abstract class with shared watermark/encryption logic.
 
 ### PDF Watermarking
 
@@ -1574,6 +1628,11 @@ finally
   "PuppeteerSettings": {
     "ExecutablePath": null,
     "Timeout": 30000
+  },
+  "LibreOfficeSettings": {
+    "ExecutablePath": "",
+    "TimeoutMs": 60000,
+    "TempDirectory": ""
   },
   "WebhookSettings": {
     "TimeoutSeconds": 30,

@@ -30,7 +30,7 @@
 <td width="50%">
 
 ### 🔄 Document Conversion
-Convert HTML, Markdown, or URLs to PDF. Convert Markdown to HTML. Transform images between PNG, JPEG, and WebP formats with resize and quality options.
+Convert HTML, Markdown, or URLs to PDF. Convert Markdown to HTML. Convert DOCX (Word) and XLSX (Excel) to PDF using LibreOffice. Transform images between PNG, JPEG, and WebP formats with resize and quality options.
 
 </td>
 <td width="50%">
@@ -366,6 +366,16 @@ X-API-Key: your-api-key-here
 </tr>
 <tr>
 <td><code>POST</code></td>
+<td><code>/api/v1/convert/docx-to-pdf</code></td>
+<td>Convert DOCX (Word) to PDF</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/convert/xlsx-to-pdf</code></td>
+<td>Convert XLSX (Excel) to PDF</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
 <td><code>/api/v1/convert/pdf/merge</code></td>
 <td>Merge multiple PDFs into one</td>
 </tr>
@@ -660,6 +670,65 @@ Content-Type: application/json
 | `imageWidth` | Target width in pixels (maintains aspect ratio) |
 | `imageHeight` | Target height in pixels (maintains aspect ratio) |
 | `imageQuality` | Quality 1-100 (for JPEG/WebP) |
+
+</details>
+
+<details>
+<summary><strong>Convert DOCX to PDF</strong></summary>
+
+```json
+POST /api/v1/convert/docx-to-pdf
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "documentData": "base64-encoded-docx-data",
+  "fileName": "report.docx",
+  "webhookUrl": "https://example.com/webhooks/conversion",
+  "options": {
+    "watermark": {
+      "text": "DRAFT",
+      "opacity": 0.2
+    },
+    "passwordProtection": {
+      "userPassword": "secret123"
+    }
+  }
+}
+```
+
+**Notes:**
+- DOCX file should be base64 encoded
+- Supports all PDF options (watermark, password protection)
+- Uses LibreOffice for high-fidelity conversion
+
+</details>
+
+<details>
+<summary><strong>Convert XLSX to PDF</strong></summary>
+
+```json
+POST /api/v1/convert/xlsx-to-pdf
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "spreadsheetData": "base64-encoded-xlsx-data",
+  "fileName": "financial-report.xlsx",
+  "webhookUrl": "https://example.com/webhooks/conversion",
+  "options": {
+    "watermark": {
+      "text": "CONFIDENTIAL",
+      "opacity": 0.3
+    }
+  }
+}
+```
+
+**Notes:**
+- XLSX file should be base64 encoded
+- Supports all PDF options (watermark, password protection)
+- Uses LibreOffice for high-fidelity conversion
 
 </details>
 
@@ -1141,6 +1210,29 @@ tests/
 ```
 
 > **Note:** When `ExecutablePath` is `null`, PuppeteerSharp automatically downloads a compatible Chromium version. This is the recommended approach for Docker deployments.
+
+</details>
+
+<details>
+<summary><strong>LibreOffice Settings</strong></summary>
+
+```json
+{
+  "LibreOfficeSettings": {
+    "ExecutablePath": null,
+    "TimeoutMs": 60000,
+    "TempDirectory": null
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `ExecutablePath` | null | Path to LibreOffice executable (null = use system default) |
+| `TimeoutMs` | 60000 | Conversion timeout in milliseconds |
+| `TempDirectory` | null | Temp directory for conversion files (null = system temp) |
+
+> **Note:** LibreOffice is used for DOCX and XLSX to PDF conversions. In Docker deployments, LibreOffice is installed automatically. For local development on Linux, install with: `apt-get install libreoffice-writer libreoffice-calc`.
 
 </details>
 
