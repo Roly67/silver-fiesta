@@ -31,7 +31,7 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.15.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.509.9" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.21.1" />
   </ItemGroup>
 
 </Project>
